@@ -43,7 +43,7 @@ import com.kosprov.jargon2.api.Jargon2.Verifier;
 import com.kosprov.jargon2.api.Jargon2.Version;
 
 /**
- * IPME - Interleaved, Permuted, Multiple Encryption Container This class
+ * Wilkins - Interleaved, Permuted, Multiple Encryption Container This class
  * encrypts two or more data files and zero or more filler files into a single
  * output file. A keyphrase is specified for each data file which will retrieve
  * its contents from the output file. Filler file sections are encrypted with a
@@ -386,7 +386,6 @@ public class Wilkins {
 		public FileHeader(BufferedInputStream bis) {
 			try {
 				bis.read(header);
-				//System.out.println(IPMEC.toString(header));
 			} catch (IOException e) {
 				header = null;
 			}
@@ -483,13 +482,10 @@ public class Wilkins {
 		}
 		
 		public boolean decode( Cipher cipher, SecretKey key, byte[] iv ) {
-			//.out.println("DECODE: " + IPMEC.toString(key.getEncoded()));
 			IvParameterSpec parameterSpec = new IvParameterSpec(iv);
 			try {
-				//System.out.println( IPMEC.toString( guidance ) );
 				cipher.init(Cipher.DECRYPT_MODE, key, parameterSpec);
 				byte[] cipherText = cipher.doFinal(guidance);
-				//System.out.println( IPMEC.toString( cipherText ) );
 				guidance = cipherText;
 				return true;
 			} catch (InvalidKeyException | InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException e) {
@@ -499,7 +495,6 @@ public class Wilkins {
 		}
 		
 		public boolean encode( Cipher cipher, SecretKey key, byte[] iv) {
-			//System.out.println("ENCODE: " + IPMEC.toString(key.getEncoded()));
 			IvParameterSpec parameterSpec = new IvParameterSpec(iv);
 			try {
 				cipher.init(Cipher.ENCRYPT_MODE, key, parameterSpec);
