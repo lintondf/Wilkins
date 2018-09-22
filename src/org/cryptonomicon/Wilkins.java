@@ -6,37 +6,34 @@ package org.cryptonomicon;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.RandomAccessFile;
 import java.math.BigInteger;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Random;
 import java.util.ArrayList;
-import java.util.zip.CRC32;
-import java.util.zip.Checksum;
 
-import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
-import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import com.google.common.io.BaseEncoding;
 import com.google.common.primitives.Bytes;
-import com.google.common.primitives.Ints;
-import com.google.common.primitives.Longs;
 import com.kosprov.jargon2.api.Jargon2.Hasher;
 import com.kosprov.jargon2.api.Jargon2.Type;
 import com.kosprov.jargon2.api.Jargon2.Verifier;
@@ -68,12 +65,18 @@ public class Wilkins {
 	private Type type = Type.ARGON2d;
 	private Version version = Version.V13;
 	private int memoryCost = 65536;
-	private int timeCost = 3;
+	private int timeCost = 10;
+	private int parallelism = 10;
 	protected int keyLength = 256;
 	protected int hashLength = keyLength / 8;
 	private Cipher cipher;
+	
+	protected Mixer mixer = new ShuffledInterlaceMixer();
 
-
+	protected Hasher defaultHasher =  com.kosprov.jargon2.api.Jargon2.jargon2Hasher().type(type).version(version)
+			.memoryCost(memoryCost).timeCost(timeCost).parallelism(parallelism)
+			.hashLength(hashLength);
+			
 	public Wilkins() {
 		//System.out.println( type.toString() + " " + version.toString() );
 		try {
@@ -89,8 +92,8 @@ public class Wilkins {
 			if (!file.exists() && file.isFile() && file.length() > 0L)
 				return false;
 			byte[] key = fileHeader.getHasher().password(passPhrase.getBytes()).rawHash();
-			//System.out.printf("%-16s %s %s\n", path, toString(key), passPhrase );
 			BlockedFile pair = new BlockedFile(file, key);
+			System.out.printf("%-16s %s %s %d\n", path, toString(key), passPhrase, pair.length );
 			maxLength = Math.max(maxLength, pair.length);
 			dataFiles.add(pair);
 			return true;
@@ -119,12 +122,10 @@ public class Wilkins {
 		fillerCount = m;
 	}
 	
-	public boolean read( File inputFile, OutputStream os, String passPhrase ) throws IOException {
-		FileInputStream fis = new FileInputStream(inputFile);
-		BufferedInputStream bis = new BufferedInputStream( fis );
+	public boolean read( RandomAccessFile file, OutputStream os, String passPhrase ) throws IOException {
 		BufferedOutputStream bos = new BufferedOutputStream( os );
 		
-		FileHeader fileHeader = new FileHeader(bis);
+		FileHeader fileHeader = new FileHeader(file);
 		if (! fileHeader.isValid()) {
 			return false;
 		}
@@ -137,7 +138,6 @@ public class Wilkins {
 		keyLength = fileHeader.getKeySize();
 		hashLength = keyLength/8;
 		
-		byte[] iv = fileHeader.getIV();
 		//System.out.printf("IV %s\n", toString(iv));
 		byte[] key = fileHeader.getHasher()
 				.password(passPhrase.getBytes()).rawHash();
@@ -145,10 +145,10 @@ public class Wilkins {
 		SecretKey secretKey = new SecretKeySpec(key, "AES");
 		
 		int fileIndex = 0;
-		FileGuidance targetGuidance = null;
-		while (bis.available() > 0) {
-			FileGuidance fileGuidance = new FileGuidance(bis);
-			if (fileGuidance.decode(cipher, secretKey, iv)) {
+		PayloadFileGuidance targetGuidance = null;
+		while (file.getFilePointer() < file.length()) {
+			PayloadFileGuidance fileGuidance = new PayloadFileGuidance(file);
+			if (fileGuidance.decode(cipher, secretKey, fileHeader.getIV(fileIndex))) {
 				if (fileGuidance.isValid()) {
 					targetGuidance = fileGuidance;
 					break;
@@ -156,34 +156,29 @@ public class Wilkins {
 			}
 			fileIndex++;
 		}
-		if (targetGuidance == null || bis.available() == 0)
+		if (targetGuidance == null || file.getFilePointer() >= file.length())
 			return false;
-		System.out.println(fileIndex + ": " + targetGuidance.toString());
+		System.out.println("FOUND: " + fileIndex + ": " + targetGuidance.toString());
 		while (fileIndex < targetGuidance.getFileCount()) {
-			new FileGuidance(bis);
+			new PayloadFileGuidance(file);
 			fileIndex++;
 		}
 		
 		baseRandom.setSeed( targetGuidance.getSeed() );
 
-		return readBlocks( baseRandom, targetGuidance.getFileCount(), targetGuidance.getLength(), targetGuidance.getFileOrdinal(), targetGuidance.getMaxBlocks(), bis, bos );
+		return mixer.readBlocks( targetGuidance, baseRandom, file, bos );
 	}
 	
+	ArrayList<BlockedFile> allFiles = new ArrayList<>();
+	int maxBlocks = 0;
 	
-
-	public boolean write( File outputFile, FileHeader fileHeader ) throws IOException {
-		FileOutputStream fos = new FileOutputStream(outputFile);
-		BufferedOutputStream bos = new BufferedOutputStream( fos );
-		//System.out.printf("HEADER: (%d) %s\n", fileHeader.header.length, BaseEncoding.base16().lowerCase().encode(fileHeader.header));
-		//System.out.println( fileHeader.toString() );
-		bos.write( fileHeader.header );
-		
+	public boolean load( RandomAccessFile writer, FileHeader fileHeader ) throws IOException {
 		// deflate and encrypt all data files.
 		// determine maximum size in blocks
-		int maxBlocks = 0;
+		int fileOrdinal = 0;
 		for (BlockedFile file : dataFiles) {
 			int nBlocks = file.deflate(-1);
-			nBlocks = file.encrypt( fileHeader.getIV() );
+			nBlocks = file.encrypt( fileHeader.getIV(fileOrdinal++) );
 			maxBlocks = Math.max(maxBlocks, nBlocks);
 		}
 		
@@ -195,7 +190,7 @@ public class Wilkins {
 		// deflate and encrypt all filler files
 		for (BlockedFile file : fillerFiles) {
 			file.deflate(maxBlocks-1);
-			file.encrypt(fileHeader.getIV());
+			file.encrypt(fileHeader.getIV(fileOrdinal++));
 			file.pad(maxBlocks);
 		}
 		
@@ -206,16 +201,26 @@ public class Wilkins {
 				secureRandom.nextBytes(key);
 				BlockedFile file = new BlockedFile( key, maxBlocks );
 				file.deflate(maxBlocks);
-				file.encrypt(fileHeader.getIV());
+				file.encrypt(fileHeader.getIV(fileOrdinal++));
 				fillerFiles.add(file);
 			}
 		}
 		
 		// combine data and filler files into a combined list
-		ArrayList<BlockedFile> allFiles = new ArrayList<>();
+		
 		allFiles.addAll(dataFiles);
 		allFiles.addAll(fillerFiles);
 		//allFiles.forEach( System.out::println );
+		System.out.println( maxBlocks + " / " + allFiles.size() );
+		return true;
+	}
+
+	public boolean write( RandomAccessFile writer, FileHeader fileHeader ) throws IOException {
+		//System.out.printf("HEADER: (%d) %s\n", fileHeader.header.length, BaseEncoding.base16().lowerCase().encode(fileHeader.header));
+		//System.out.println( fileHeader.toString() );
+		System.out.printf("Write 0: %d\n", writer.getFilePointer());
+		writer.write( fileHeader.header );
+		System.out.printf("Write 1: %d\n", writer.getFilePointer());
 		
 		// randomly permute the order of the files
 		int[] moduli = new int[allFiles.size()];
@@ -230,19 +235,21 @@ public class Wilkins {
 
 		
 		// write guidance for each file encrypted with the individual file key in permuted order
+		int guidanceOrdinal = 0;
 		for (int modulus : moduli) {
 			BlockedFile file = allFiles.get(modulus);
-			FileGuidance fileGuidance = new FileGuidance(maxBlocks, moduli.length, modulus, seed, file.length );
+			PayloadFileGuidance fileGuidance = new PayloadFileGuidance(maxBlocks, moduli.length, modulus, seed, (int) file.length );
 			System.out.printf("FILE %d: (%d) %s\n", modulus, fileGuidance.guidance.length, 
 					BaseEncoding.base16().lowerCase().encode(fileGuidance.guidance));
 			//System.out.println( fileGuidance.toString() );
-			fileGuidance.encode( cipher, file.secretKey, fileHeader.getIV() );
-			bos.write( fileGuidance.getCipherText() );
+			fileGuidance.encode( cipher, file.secretKey, fileHeader.getIV(guidanceOrdinal++) );
+			writer.write( fileGuidance.getCipherText() );
 			//System.out.printf("      : %s\n", toString(fileGuidance.getCipherText()));
 		}
+		System.out.printf("Write 2: %d\n", writer.getFilePointer());
 		
 		baseRandom.setSeed(seed);
-		return writeBlocks( baseRandom, maxBlocks, allFiles, bos );
+		return mixer.writeBlocks( baseRandom, maxBlocks, allFiles, writer );
 	}
 	
 	protected boolean writeBlocks( Random random, int maxBlocks, ArrayList<BlockedFile> allFiles, BufferedOutputStream bos ) throws IOException {
@@ -275,35 +282,14 @@ public class Wilkins {
 		return true;
 	}
 
-	protected class BlockReader {
-		BufferedInputStream bis;
-		long                remaining;
-		Block               current;
-		
-		public BlockReader( BufferedInputStream bis, long length ) {
-			this.bis = bis;
-			this.remaining = length;
-		}
-		
-		public Block read() throws IOException {
-			current = new Block();
-			long n = (remaining > Block.BLOCK_SIZE) ? Block.BLOCK_SIZE : remaining;
-			current.count = bis.read( current.contents, 0, (int) n );
-			if (current.count < 0)
-				current = null;
-			remaining -= n;
-			return current;
-		}
-		
-		public Block getLast() {
-			return current;
-		}
-	}
-	
-	protected boolean readBlocks( Random random, int nFiles, long length, int fileModulus, int maxBlocks, BufferedInputStream bis, BufferedOutputStream bos ) throws IOException {
+	protected boolean readBlocks( PayloadFileGuidance fileGuidance, Random random, RandomAccessFile file, BufferedOutputStream bos ) throws IOException {
+		int nFiles = fileGuidance.getFileCount(); 
+		long length = fileGuidance.getLength();
+		int fileModulus = fileGuidance.getFileOrdinal();
+		int maxBlocks = fileGuidance.getMaxBlocks();
 		ArrayList<BlockReader> readers = new ArrayList<>();
 		for (int i = 0; i < nFiles+1; i++) {
-			readers.add( new BlockReader(bis, length ) );
+			readers.add( new BlockReader(file, length ) );
 		}
 		ArrayList<BlockReader> shuffled = new ArrayList<>();
 		shuffled.addAll(readers);
@@ -330,228 +316,6 @@ public class Wilkins {
 		System.out.printf("%d  %d\n", maxLength, fillerCount);
 	}
 
-	/**
-	 * Encryption Approach Given data files D1, D2, ... Dn and asscoiated
-	 * passphrases P1, P2, ... Pn, filler files F1, F2, .. Fm. Convert
-	 * passphrases to keys K1, K2, ... Kn. XOR all keys and fold result to
-	 * 48-bit integer S0. Seed standard Java Random with S0. Determine lengths
-	 * of files and set L0 as max of set. Compute L1, L2, .. Ln as lengths of
-	 * required padding for each file. Output file size will be [L0 +
-	 * sizeof(L1)] * [n + m] Generate a random permutation of 1 .. [L0] O0
-	 * Random keys R1, R2, ... Rm. For each data file Di, concatenate [Li,
-	 * contents of Di, Li random bytes] and AES encrypt with Ki yielding Ci. For
-	 * each filler file Fi, concatenate [Li, contents of Fi, Li random bytes]
-	 * and AES encrypt with Ri yielding Ei. Concatenate all Ci and Ei. Permute
-	 * IAW O0. Write permutation to output file.
-	 * 
-	 */
-
-	/**
-	 * FILE FORMAT
-	 * 32*8/File Header
-	 *  8/argon type,
-	 *  8/argon version,
-	 *  8/memory cost/1024,
-	 *  8/time cost,
-	 *  8/key size (bits)
-	 *  2*8/0
-	 *  24*8/IV
-	 * [n+m] * 256/encoded-guidance [encoded with corresponding Ki or Ri keys]
-	 *  32/maxBlocks (same for each key),
-	 *  8/[n+m] (same for each key),
-	 *  8/content modulus [0 .. n+m) (unique for each key),
-	 *  48/permutation seed (same for each key)
-	 *  64/file length,
-	 *  64/random fill (varies for each key) 
-	 *  32/CRC32 of preceeding
-	 * [n+m]*L0 contents bytes in 1024 byte blocks ordered randomly per permutation
-	 */
-	
-	protected static class FileHeader {
-		
-		public byte[] header = new byte[64];
-		
-		public FileHeader( Type type, Version version, int memoryCost, int timeCost, int keySize, byte[] salt) {
-			secureRandom.nextBytes(header);
-			header[0] = (byte) type.ordinal();
-			header[1] = (byte) version.ordinal();
-			header[2] = (byte) (memoryCost/1024);
-			header[3] = (byte) timeCost;
-			header[4] = (byte) (keySize / 8);
-			for (int i = 0; i < salt.length; i++) {
-				header[32+i] = salt[i];
-			}
-		}
-		
-		public FileHeader(BufferedInputStream bis) {
-			try {
-				bis.read(header);
-			} catch (IOException e) {
-				header = null;
-			}
-		}
-		
-		private final int parallelism = 4;
-		
-		public Hasher getHasher() {
-			return 	com.kosprov.jargon2.api.Jargon2.jargon2Hasher().type(getType()).version(getVersion())
-					.memoryCost(getMemoryCost()).timeCost(getTimeCost()).parallelism(parallelism)
-					.hashLength(getKeySize()/8)
-					.salt(getSalt());
-		}
-		
-		public boolean isValid() {
-			return header != null;
-		}
-
-		public Type getType() {
-			return Type.values()[header[0]];
-		}
-		
-		public Version getVersion() {
-			return Version.values()[header[1]];
-		}
-		
-		public int getMemoryCost() {
-			return 1024 * header[2];
-		}
-		
-		public int getTimeCost() {
-			return header[3];
-		}
-		
-		public int getKeySize() {
-			return 8*header[4];
-		}
-		
-		public byte[] getSalt() {
-			int hashLength = getKeySize()/8;
-			byte[] salt = new byte[hashLength];
-			for (int i = 0; i < hashLength; i++) {
-				salt[i] = header[32+i];
-			}
-			return salt;
-		}
-		
-		public byte[] getIV() {
-			return Arrays.copyOfRange(header, 32, 32+Wilkins.AES_IV_BYTES);
-		}
-		
-		public String toString() {
-			return String.format("%s %s %d %d %d %s", getType().toString(), getVersion().toString(), getMemoryCost(), getTimeCost(), getKeySize(),
-					BaseEncoding.base16().lowerCase().encode(getIV()) );
-					
-		}
-	}
-	
-	protected static class FileGuidance {
-		
-		public byte[] guidance = new byte[32];
-		
-		public FileGuidance(int maxBlocks, int nm, int modulus, long seed, long length ) {
-			ByteArrayOutputStream bos = new ByteArrayOutputStream();
-			try {
-				bos.write( Ints.toByteArray(maxBlocks) ); // 0 .. 3  4 bytes 
-				bos.write( (byte) nm );                   // 4       1 byte
-				bos.write( (byte) modulus );              // 5       1 byte
-				bos.write( Longs.toByteArray(seed) );     // 6 ..13  8 bytes
-				bos.write( Longs.toByteArray(length) );   //14 ..21  8 bytes
-				byte[] filler = new byte[6];              //22 ..27  6 bytes
-				secureRandom.nextBytes(filler);
-				bos.write( filler );
-				guidance = bos.toByteArray();             // 28 bytes
-				
-				Checksum checksum = new CRC32();
-				checksum.update( guidance, 0, guidance.length );
-				byte[] crc = Longs.toByteArray( checksum.getValue() );
-				bos.write(crc, 4, 4 );                    //28 ..31  4 bytes
-				guidance = bos.toByteArray();
-			} catch (IOException e) {
-				e.printStackTrace();
-				guidance = null;
-			}
-		}
-		
-		public FileGuidance(BufferedInputStream bis) {
-			try {
-				bis.read(guidance);
-				//System.out.println(BaseEncoding.base16().lowerCase().encode(guidance));
-			} catch (IOException e) {
-				guidance = null;
-			}
-		}
-		
-		public boolean decode( Cipher cipher, SecretKey key, byte[] iv ) {
-			IvParameterSpec parameterSpec = new IvParameterSpec(iv);
-			try {
-				cipher.init(Cipher.DECRYPT_MODE, key, parameterSpec);
-				byte[] cipherText = cipher.doFinal(guidance);
-				guidance = cipherText;
-				return true;
-			} catch (InvalidKeyException | InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException e) {
-				e.printStackTrace();
-			}
-			return false;
-		}
-		
-		public boolean encode( Cipher cipher, SecretKey key, byte[] iv) {
-			IvParameterSpec parameterSpec = new IvParameterSpec(iv);
-			try {
-				cipher.init(Cipher.ENCRYPT_MODE, key, parameterSpec);
-				byte[] cipherText = cipher.doFinal(guidance);
-				guidance = cipherText;
-				return true;
-			} catch (InvalidKeyException | InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException e) {
-				e.printStackTrace();
-			}
-			return false;
-		}
-		
-		public boolean isValid() {
-			if (guidance == null)
-				return false;
-			byte[] content = Arrays.copyOf(guidance, 28);
-			Checksum checksum = new CRC32();
-			checksum.update( content, 0, content.length );
-			byte[] crc = Longs.toByteArray( checksum.getValue() );
-			crc = Arrays.copyOfRange(crc, 4, 8);
-			return Arrays.equals(crc, Arrays.copyOfRange(guidance, 28, 32));
-		}
-		
-		
-		public byte[] getCipherText() {
-			return guidance;
-		}
-		
-		public byte[] getPlainText() {
-			return guidance;
-		}
-		
-		public int getMaxBlocks() {
-			return Ints.fromByteArray( Arrays.copyOfRange(guidance, 0, 4));
-		}
-		
-		public int getFileCount() {
-			return guidance[4];
-		}
-		
-		public int getFileOrdinal() {
-			return guidance[5];
-		}
-		
-		public Long getSeed() {
-			return Longs.fromByteArray(Arrays.copyOfRange(guidance, 6, 14));
-		}
-		
-		public long getLength() {
-			return Ints.fromByteArray(Arrays.copyOfRange(guidance, 14, 22));
-		}
-		
-		public String toString() {
-			return String.format("%d %d %d %d %d %b", getMaxBlocks(), getFileCount(), getFileOrdinal(), getSeed(), getLength(), isValid() );
-		}
-	}
-	
 	public int[] permute( Random random, int[] array ) {
 		int n = array.length;
 		while (n > 1) {
@@ -651,50 +415,50 @@ public class Wilkins {
 		System.out.println(Arrays.toString(array));
 	}
 	
-	public static void test_writeReadBlocks( String[] args) {
-		//	protected boolean writeBlocks( Random random, int maxBlocks, ArrayList<BlockedFile> allFiles, BufferedOutputStream bos ) throws IOException {
-		Random random = new Random();
-		random.setSeed(0L);
-		int maxBlocks = 1;
-		ArrayList<BlockedFile> allFiles = new ArrayList<>();
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		BufferedOutputStream bos = new BufferedOutputStream(out);
-		byte[] iv = new byte[Wilkins.AES_IV_BYTES];
-		for (int i = 0; i < 3; i++) {
-			BlockedFile file = new BlockedFile( new byte[32], 1 );
-			Block block = file.blocks.getList().get(0);
-			block.count = 16;
-			System.out.printf( "I%d: %s\n", i, block.toString() );
-			//Arrays.fill(block.contents, (byte) i);
-			allFiles.add(file);
-		}
-		Wilkins ipmec = new Wilkins();
-		try {
-			ipmec.writeBlocks( random, maxBlocks, allFiles, bos );
-			byte[] result = out.toByteArray();
-			String block = BaseEncoding.base16().lowerCase().encode(result);
-			for (int i = 0; i < block.length(); i+=16*2) {
-				System.out.printf("D%2d: (%d) %s\n", i,  result.length, block.substring(i, i+16*2));
-			}
-			for (int iFile = 0; iFile < 3; iFile++) {
-				random.setSeed(0L);
-				ByteArrayInputStream inp = new ByteArrayInputStream( result );
-				BufferedInputStream bis = new BufferedInputStream( inp );
-				out = new ByteArrayOutputStream();
-				bos = new BufferedOutputStream(out);
-				ipmec.readBlocks(random, 3, 16, iFile, 1, bis, bos);
-				byte[] output = out.toByteArray();
-				block = BaseEncoding.base16().lowerCase().encode(output);
-				for (int i = 0; i < block.length(); i+=16*2) {
-					int n = Math.min( block.length(), i+16*2);
-					System.out.printf("O%d: (%d) %s\n", iFile, output.length, block.substring(i, n));
-				}
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
+//	public static void test_writeReadBlocks( String[] args) {
+//		//	protected boolean writeBlocks( Random random, int maxBlocks, ArrayList<BlockedFile> allFiles, BufferedOutputStream bos ) throws IOException {
+//		Random random = new Random();
+//		random.setSeed(0L);
+//		int maxBlocks = 1;
+//		ArrayList<BlockedFile> allFiles = new ArrayList<>();
+//		ByteArrayOutputStream out = new ByteArrayOutputStream();
+//		BufferedOutputStream bos = new BufferedOutputStream(out);
+//		byte[] iv = new byte[Wilkins.AES_IV_BYTES];
+//		for (int i = 0; i < 3; i++) {
+//			BlockedFile file = new BlockedFile( new byte[32], 1 );
+//			Block block = file.blocks.getList().get(0);
+//			block.count = 16;
+//			System.out.printf( "I%d: %s\n", i, block.toString() );
+//			//Arrays.fill(block.contents, (byte) i);
+//			allFiles.add(file);
+//		}
+//		Wilkins ipmec = new Wilkins();
+//		try {
+//			ipmec.writeBlocks( random, maxBlocks, allFiles, bos );
+//			byte[] result = out.toByteArray();
+//			String block = BaseEncoding.base16().lowerCase().encode(result);
+//			for (int i = 0; i < block.length(); i+=16*2) {
+//				System.out.printf("D%2d: (%d) %s\n", i,  result.length, block.substring(i, i+16*2));
+//			}
+//			for (int iFile = 0; iFile < 3; iFile++) {
+//				random.setSeed(0L);
+//				ByteArrayInputStream inp = new ByteArrayInputStream( result );
+//				BufferedInputStream bis = new BufferedInputStream( inp );
+//				out = new ByteArrayOutputStream();
+//				bos = new BufferedOutputStream(out);
+//				ipmec.readBlocks(random, 3, 16, iFile, 1, bis, bos);
+//				byte[] output = out.toByteArray();
+//				block = BaseEncoding.base16().lowerCase().encode(output);
+//				for (int i = 0; i < block.length(); i+=16*2) {
+//					int n = Math.min( block.length(), i+16*2);
+//					System.out.printf("O%d: (%d) %s\n", iFile, output.length, block.substring(i, n));
+//				}
+//			}
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+//	}
+//
 	public static void test_write(String[] args) {
 		Wilkins ipmec = new Wilkins();
 		byte[] iv = new byte[Wilkins.AES_IV_BYTES];
@@ -706,20 +470,44 @@ public class Wilkins {
 		ipmec.addDataFile("data2.txt", fileHeader, "key2");
 		ipmec.addFillerFile("filler1.txt");
 		ipmec.setRandomFillerCount(3);
+		
+		File file = new File("output.gpg");
 		try {
-			File out = new File("output.ipmec");
-			ipmec.write(out, fileHeader);
+			RandomAccessFile writer = new RandomAccessFile(file, "rw");
+			ipmec.load(writer, fileHeader );
+			ipmec.camouflage( writer );
+			ipmec.write(writer, fileHeader );
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+//		Path outputPath = file.toPath();
+//		try (FileChannel fileChannel = (FileChannel) Files
+//				  .newByteChannel(outputPath, EnumSet.of(
+//						    StandardOpenOption.READ, 
+//						    StandardOpenOption.WRITE, 
+//						    StandardOpenOption.TRUNCATE_EXISTING))) {
+//			
+//		    MappedByteBuffer mappedByteBuffer = fileChannel
+//		    	      .map(FileChannel.MapMode.READ_WRITE, 0, charBuffer.length());
+//
+//			ipmec.write(out, fileHeader);
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
 		ipmec.report();
 	}
 	
+	public void camouflage(RandomAccessFile writer) {
+		// compute total file size
+	
+	}
+
 	public static void test_read(String[] args) {
 		Wilkins ipmec = new Wilkins();
 		try {
-			File in = new File("output.ipmec");
-			ipmec.read(in, System.out, "key1");
+			File in = new File("output.gpg");
+			RandomAccessFile file = new RandomAccessFile( in, "r");
+			ipmec.read( file, System.out, "key1");
 			ipmec.report();
 		} catch (Exception x) {
 			
@@ -729,7 +517,7 @@ public class Wilkins {
 	public static void test_fileGuidance( String[] args) {
 		//FileGuidance(int maxBlocks, int nm, int modulus, long seed, long length )
 		Wilkins ipmec = new Wilkins();
-		FileGuidance g = new FileGuidance( 1, 2, 3, 4L, 5L );
+		PayloadFileGuidance g = new PayloadFileGuidance( 1, 2, 3, 4L, 5 );
 		System.out.println(g.toString());
 		System.out.println( toString(g.getPlainText() ) );
 		byte[] key = new byte[ipmec.hashLength];
@@ -747,7 +535,7 @@ public class Wilkins {
 		//test_fileGuidance( args );
 		//test_writeReadBlocks(args);
 		test_write(args);
-		test_read(args);
+		//test_read(args);
 	}
 
 }
