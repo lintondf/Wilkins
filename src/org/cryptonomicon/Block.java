@@ -21,8 +21,13 @@ class Block {
 	}
 	
 	public Block( Block that) {
-		contents = Arrays.copyOf(that.contents, that.count);
+		contents = Arrays.copyOf(that.contents, BLOCK_SIZE);
 		count = that.count;
+	}
+	
+	protected Block( byte[] test ) {
+		contents = Arrays.copyOf( test, BLOCK_SIZE );
+		count = test.length;
 	}
 	
 	public void pad() {
@@ -32,7 +37,7 @@ class Block {
 			for (int i = 0; i < padding.length; i++) {
 				contents[count+i] = padding[i];
 			}
-			count = BLOCK_SIZE;
+			//count = BLOCK_SIZE;
 		}
 	}
 	
@@ -120,6 +125,14 @@ class Block {
 		public synchronized void add( Block block ) {
 			list.add(block);
 		}
+		
+		public int length() {
+			int n = 0;
+			for (Block block : list) {
+				n += block.count;
+			}
+			return n;
+		}
 
 		public int size() {
 			return list.size();
@@ -127,6 +140,14 @@ class Block {
 
 		public BlockListIterator getIterator() {
 			return new BlockListIterator(list.iterator());
+		}
+		
+		public Block getFirst() {
+			return list.get(0);
+		}
+		
+		public Block getLast() {
+			return list.get(list.size()-1);
 		}
 		
 		public List<Block> getList() {

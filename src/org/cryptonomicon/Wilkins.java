@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
@@ -26,11 +27,18 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Random;
 import java.util.ArrayList;
+import java.util.zip.InflaterOutputStream;
+import java.util.zip.ZipOutputStream;
 
 import javax.crypto.Cipher;
+import javax.crypto.CipherInputStream;
+import javax.crypto.CipherOutputStream;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+
+import org.cryptonomicon.Block.BlockInputStream;
 
 import com.google.common.io.BaseEncoding;
 import com.google.common.primitives.Bytes;
@@ -62,7 +70,7 @@ public class Wilkins {
 	
 	public static final int AES_IV_BYTES = 128/8;
 
-	private Type type = Type.ARGON2d;
+	private Type type = Type.ARGON2id;
 	private Version version = Version.V13;
 	private int memoryCost = 65536;
 	private int timeCost = 10;
@@ -123,12 +131,13 @@ public class Wilkins {
 	}
 	
 	public boolean read( RandomAccessFile file, OutputStream os, String passPhrase ) throws IOException {
-		BufferedOutputStream bos = new BufferedOutputStream( os );
+		InflaterOutputStream ios = new InflaterOutputStream( os );
 		
 		FileHeader fileHeader = new FileHeader(file);
 		if (! fileHeader.isValid()) {
 			return false;
 		}
+		System.out.printf("Read 0: %d\n", file.getFilePointer());
 		System.out.println(fileHeader.toString() );
 		type = fileHeader.getType();
 		version = fileHeader.getVersion();
@@ -148,13 +157,12 @@ public class Wilkins {
 		PayloadFileGuidance targetGuidance = null;
 		while (file.getFilePointer() < file.length()) {
 			PayloadFileGuidance fileGuidance = new PayloadFileGuidance(file);
-			if (fileGuidance.decode(cipher, secretKey, fileHeader.getIV(fileIndex))) {
+			if (fileGuidance.decode(cipher, secretKey, fileHeader.getIV(fileIndex++))) {
 				if (fileGuidance.isValid()) {
 					targetGuidance = fileGuidance;
 					break;
 				}
 			}
-			fileIndex++;
 		}
 		if (targetGuidance == null || file.getFilePointer() >= file.length())
 			return false;
@@ -163,10 +171,21 @@ public class Wilkins {
 			new PayloadFileGuidance(file);
 			fileIndex++;
 		}
+		System.out.printf("Read 1: %d\n", file.getFilePointer());
 		
 		baseRandom.setSeed( targetGuidance.getSeed() );
-
-		return mixer.readBlocks( targetGuidance, baseRandom, file, bos );
+		//TODO add mixer selection to payloadfileguidance
+		try {
+			IvParameterSpec parameterSpec = new IvParameterSpec(fileHeader.getIV(targetGuidance.getFileOrdinal()));
+			System.out.println( toString(parameterSpec.getIV()));
+			System.out.println( toString(secretKey.getEncoded()));
+			cipher.init(Cipher.DECRYPT_MODE, secretKey, parameterSpec);
+			CipherOutputStream cos = new CipherOutputStream( ios, cipher );
+			return mixer.readBlocks( targetGuidance, baseRandom, file, cos );
+		} catch (Exception x) {
+			x.printStackTrace();
+			return false;
+		}
 	}
 	
 	ArrayList<BlockedFile> allFiles = new ArrayList<>();
@@ -179,9 +198,13 @@ public class Wilkins {
 		for (BlockedFile file : dataFiles) {
 			int nBlocks = file.deflate(-1);
 			nBlocks = file.encrypt( fileHeader.getIV(fileOrdinal++) );
+			//if (fileOrdinal == 0+1) System.out.println( "F0B0: " + file.blocks.getList().get(0).toString() );
 			maxBlocks = Math.max(maxBlocks, nBlocks);
 		}
 		
+//		for (Block block : dataFiles.get(0).blocks.getList()) {
+//			System.out.println( block.toString() );
+//		}
 		// pad all files to maximum size with random data
 		for (BlockedFile file : dataFiles) {
 			file.pad(maxBlocks);
@@ -210,6 +233,11 @@ public class Wilkins {
 		
 		allFiles.addAll(dataFiles);
 		allFiles.addAll(fillerFiles);
+		int i = 0;
+		for (BlockedFile file : allFiles ) {
+			System.out.println( i + ": " + file.blocks.getList().get(13).toString() );
+			System.out.println( i++ + ": " + file.blocks.getList().get(14).toString() );
+		}
 		//allFiles.forEach( System.out::println );
 		System.out.println( maxBlocks + " / " + allFiles.size() );
 		return true;
@@ -252,61 +280,61 @@ public class Wilkins {
 		return mixer.writeBlocks( baseRandom, maxBlocks, allFiles, writer );
 	}
 	
-	protected boolean writeBlocks( Random random, int maxBlocks, ArrayList<BlockedFile> allFiles, BufferedOutputStream bos ) throws IOException {
-		// generate xor'd data blocks: {for-each-i {xor(all but i)}, xor all}
-		ArrayList<Block.BlockList> allLists = new ArrayList<>();
-		for (BlockedFile file : allFiles) {
-			allLists.add( file.blocks );
-		}
-		Block.BlockList xorOfAll = Block.xor(allLists);
-		ArrayList<Block.BlockList> xorExcept = new ArrayList<>();
-		ArrayList<Block.BlockListIterator> iterators = new ArrayList<>();
-		ArrayList<Block.BlockListIterator> shuffled = new ArrayList<>();
-		for (int iList = 0; iList < allLists.size(); iList++) {
-			Block.BlockList blockList = Block.xor( xorOfAll, allLists.get(iList) );
-			xorExcept.add( blockList );
-			iterators.add( blockList.getIterator() );
-		}
-		iterators.add( xorOfAll.getIterator() ); // in file order
-		shuffled.addAll( iterators );
-		
-		for (int iBlock = 0; iBlock < maxBlocks; iBlock++) {
-			permute( random, shuffled );
-			for (Block.BlockListIterator it : shuffled) {
-				Block block = it.next();
-				//System.out.printf( "W%d %s\n", iBlock, block.toString() );
-				bos.write( block.contents, 0, block.count );
-			}
-		}
-		bos.close();
-		return true;
-	}
-
-	protected boolean readBlocks( PayloadFileGuidance fileGuidance, Random random, RandomAccessFile file, BufferedOutputStream bos ) throws IOException {
-		int nFiles = fileGuidance.getFileCount(); 
-		long length = fileGuidance.getLength();
-		int fileModulus = fileGuidance.getFileOrdinal();
-		int maxBlocks = fileGuidance.getMaxBlocks();
-		ArrayList<BlockReader> readers = new ArrayList<>();
-		for (int i = 0; i < nFiles+1; i++) {
-			readers.add( new BlockReader(file, length ) );
-		}
-		ArrayList<BlockReader> shuffled = new ArrayList<>();
-		shuffled.addAll(readers);
-		for (int iBlock = 0; iBlock < maxBlocks; iBlock++) {
-			permute( random, shuffled );
-			for (BlockReader reader : shuffled) {
-				reader.read();
-				//System.out.printf( "R%d %s\n", iBlock, reader.getLast().toString() );
-			}
-			Block allXor = readers.get(nFiles).getLast();
-			Block allButTarget = readers.get(fileModulus).getLast();
-			allXor = allXor.xor( allButTarget );
-			bos.write(allXor.contents);
-		}
-		bos.close();
-		return true;
-	}
+//	protected boolean writeBlocks( Random random, int maxBlocks, ArrayList<BlockedFile> allFiles, BufferedOutputStream bos ) throws IOException {
+//		// generate xor'd data blocks: {for-each-i {xor(all but i)}, xor all}
+//		ArrayList<Block.BlockList> allLists = new ArrayList<>();
+//		for (BlockedFile file : allFiles) {
+//			allLists.add( file.blocks );
+//		}
+//		Block.BlockList xorOfAll = Block.xor(allLists);
+//		ArrayList<Block.BlockList> xorExcept = new ArrayList<>();
+//		ArrayList<Block.BlockListIterator> iterators = new ArrayList<>();
+//		ArrayList<Block.BlockListIterator> shuffled = new ArrayList<>();
+//		for (int iList = 0; iList < allLists.size(); iList++) {
+//			Block.BlockList blockList = Block.xor( xorOfAll, allLists.get(iList) );
+//			xorExcept.add( blockList );
+//			iterators.add( blockList.getIterator() );
+//		}
+//		iterators.add( xorOfAll.getIterator() ); // in file order
+//		shuffled.addAll( iterators );
+//		
+//		for (int iBlock = 0; iBlock < maxBlocks; iBlock++) {
+//			permute( random, shuffled );
+//			for (Block.BlockListIterator it : shuffled) {
+//				Block block = it.next();
+//				//System.out.printf( "W%d %s\n", iBlock, block.toString() );
+//				bos.write( block.contents, 0, block.count );
+//			}
+//		}
+//		bos.close();
+//		return true;
+//	}
+//
+//	protected boolean readBlocks( PayloadFileGuidance fileGuidance, Random random, RandomAccessFile file, BufferedOutputStream bos ) throws IOException {
+//		int nFiles = fileGuidance.getFileCount(); 
+//		long length = fileGuidance.getLength();
+//		int fileModulus = fileGuidance.getFileOrdinal();
+//		int maxBlocks = fileGuidance.getMaxBlocks();
+//		ArrayList<BlockReader> readers = new ArrayList<>();
+//		for (int i = 0; i < nFiles+1; i++) {
+//			readers.add( new BlockReader(file, length ) );
+//		}
+//		ArrayList<BlockReader> shuffled = new ArrayList<>();
+//		shuffled.addAll(readers);
+//		for (int iBlock = 0; iBlock < maxBlocks; iBlock++) {
+//			permute( random, shuffled );
+//			for (BlockReader reader : shuffled) {
+//				reader.read();
+//				//System.out.printf( "R%d %s\n", iBlock, reader.getLast().toString() );
+//			}
+//			Block allXor = readers.get(nFiles).getLast();
+//			Block allButTarget = readers.get(fileModulus).getLast();
+//			allXor = allXor.xor( allButTarget );
+//			bos.write(allXor.contents);
+//		}
+//		bos.close();
+//		return true;
+//	}
 	
 	
 	public void report() {
@@ -507,7 +535,7 @@ public class Wilkins {
 		try {
 			File in = new File("output.gpg");
 			RandomAccessFile file = new RandomAccessFile( in, "r");
-			ipmec.read( file, System.out, "key1");
+			ipmec.read( file, new FileOutputStream(new File("test_read.out")), "key1");
 			ipmec.report();
 		} catch (Exception x) {
 			
@@ -535,7 +563,7 @@ public class Wilkins {
 		//test_fileGuidance( args );
 		//test_writeReadBlocks(args);
 		test_write(args);
-		//test_read(args);
+		test_read(args);
 	}
 
 }

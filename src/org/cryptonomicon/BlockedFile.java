@@ -2,22 +2,27 @@ package org.cryptonomicon;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterInputStream;
 import java.util.zip.Inflater;
+import java.util.zip.InflaterOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
+import javax.crypto.CipherOutputStream;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.IvParameterSpec;
@@ -68,10 +73,54 @@ class BlockedFile {
 		Block.pad(blocks, nBlocks);
 		state = State.RAW;
 	}
+	
+	/*
+	 * Create a one block test file with specified contents
+	 */
+	protected BlockedFile( byte[] contents, byte[] key ) {
+		file = null;
+		secretKey = new SecretKeySpec(key, "AES");
+		length = contents.length;
+		blocks = new Block.BlockList();
+		Block block = new Block(contents);
+		blocks.add(block);
+		state = State.RAW;
+	}
 
 	public void pad(int count) {
 		blocks.getList().get(blocks.getList().size() - 1).pad();
 		Block.pad(blocks, count);
+	}
+	
+	public InputStream getInputStream(InputStream is, byte[] iv) {
+		try {
+			IvParameterSpec parameterSpec = new IvParameterSpec(iv);
+			cipher.init(Cipher.ENCRYPT_MODE, secretKey, parameterSpec);
+			CipherInputStream cis = new CipherInputStream( is, cipher );
+			DeflaterInputStream dis = new DeflaterInputStream( cis );
+			return dis;
+		} catch (Exception x) {
+			x.printStackTrace();
+			return null;
+		}
+		
+	}
+	
+	public OutputStream getOutputStream(OutputStream os, byte[] iv) {
+		if (state == State.RAW)
+			return os;
+		OutputStream ios = new InflaterOutputStream( os );
+		if (state == State.ZIPPED)
+			return ios;
+		try {
+			IvParameterSpec parameterSpec = new IvParameterSpec(iv);
+			cipher.init(Cipher.DECRYPT_MODE, secretKey, parameterSpec);
+			CipherOutputStream cos = new CipherOutputStream( ios, cipher );
+			return cos;
+		} catch (Exception x) {
+			x.printStackTrace();
+			return null;
+		}
 	}
 
 	public int deflate(int blockLimit) { // -1 for unlimited
@@ -107,6 +156,7 @@ class BlockedFile {
 			bis.close();
 			state = State.ZIPPED;
 			this.blocks = blocks;
+			length = blocks.length();
 			return blocks.size();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -172,7 +222,13 @@ class BlockedFile {
 	}
 	
 	public int encrypt( byte[] iv ) {
+//		System.out.println( file );
+//		System.out.println( Wilkins.toString(iv));
+//		System.out.println( Wilkins.toString(secretKey.getEncoded()));
+
 		crypt( Cipher.ENCRYPT_MODE, iv );
+//		System.out.println( blocks.getList().get(0).toString() );
+		length = blocks.length();
 		state = State.ENCRYPTED;
 		return blocks.size();
 	}
@@ -208,6 +264,21 @@ class BlockedFile {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		InflaterOutputStream ios = new InflaterOutputStream(bos);
+		try {
+			IvParameterSpec parameterSpec = new IvParameterSpec(iv);
+			cipher.init(Cipher.DECRYPT_MODE, blockedFile.secretKey, parameterSpec);
+			CipherOutputStream cos = new CipherOutputStream( ios, cipher );
+			for (Block block : blockedFile.blocks.getList()) {
+				cos.write( block.contents, 0, block.count);
+			}
+			String output = new String( bos.toByteArray() );
+			System.out.println(output);
+		} catch (Exception x) {
+			x.printStackTrace();
+		}
+
 		blockedFile.decrypt( iv );
 		blockedFile.inflate( new File("test.out"));
 	}

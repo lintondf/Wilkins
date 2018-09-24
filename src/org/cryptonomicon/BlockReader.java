@@ -23,6 +23,15 @@ class BlockReader {
 		return current;
 	}
 	
+	public Block readFull() throws IOException {
+		current = new Block();
+		current.count = bis.read( current.contents, 0, Block.BLOCK_SIZE );
+		if (current.count < 0)
+			current = null;
+		remaining -= Block.BLOCK_SIZE;
+		return current;
+	}
+	
 	public Block getLast() {
 		return current;
 	}
