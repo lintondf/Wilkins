@@ -85,16 +85,16 @@ public class ShuffledInterlaceMixer implements Mixer {
 		for (BlockedFile file : allFiles) {
 			Wilkins.getLogger().log(Level.FINEST, String.format("of %d\n", file.length ) );
 		}
-		ArrayList<Block.BlockList> allLists = new ArrayList<>();
+		ArrayList<BlockList> allLists = new ArrayList<>();
 		for (BlockedFile file : allFiles) {
 			allLists.add( file.blocks );
 		}
-		Block.BlockList xorOfAll = Block.xor(allLists);
-		ArrayList<Block.BlockList> xorExcept = new ArrayList<>();
-		ArrayList<Block.BlockListIterator> iterators = new ArrayList<>();
-		ArrayList<Block.BlockListIterator> shuffled = new ArrayList<>();
+		BlockList xorOfAll = Block.xor(allLists);
+		ArrayList<BlockList> xorExcept = new ArrayList<>();
+		ArrayList<BlockListIterator> iterators = new ArrayList<>();
+		ArrayList<BlockListIterator> shuffled = new ArrayList<>();
 		for (int iList = 0; iList < allLists.size(); iList++) {
-			Block.BlockList blockList = Block.xor( xorOfAll, allLists.get(iList) );
+			BlockList blockList = Block.xor( xorOfAll, allLists.get(iList) );
 			xorExcept.add( blockList );
 			iterators.add( blockList.getIterator() );
 		}
@@ -104,7 +104,7 @@ public class ShuffledInterlaceMixer implements Mixer {
 		
 		for (int iBlock = 0; iBlock < maxBlocks; iBlock++) {
 			permute( random, shuffled );
-			for (Block.BlockListIterator it : shuffled) {
+			for (BlockListIterator it : shuffled) {
 				Block block = it.next();
 				//if (iBlock >= 13 && iBlock <= 14) System.out.printf( "W%d,%d %s\n", iBlock, iterators.indexOf(it), block.toString() );
 				writer.write( block.contents, 0, Block.BLOCK_SIZE );

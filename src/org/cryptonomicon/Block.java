@@ -1,11 +1,7 @@
 package org.cryptonomicon;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 
 import com.google.common.io.BaseEncoding;
@@ -53,8 +49,8 @@ class Block {
 		return String.format("%4d: %s", count, BaseEncoding.base16().lowerCase().encode(Arrays.copyOf(contents, count)));
 	}
 	
-	public static Block.BlockList xor( Block.BlockList one, Block.BlockList two) {
-		Block.BlockList output = new Block.BlockList();
+	public static BlockList xor( BlockList one, BlockList two) {
+		BlockList output = new BlockList();
 		int nBlocks = one.size();
 		for (int iBlock = 0; iBlock < nBlocks; iBlock++) {
 			Block block = new Block( one.getList().get(iBlock) );
@@ -63,8 +59,8 @@ class Block {
 		return output;
 	}
 	
-	public static Block.BlockList xor( List<Block.BlockList> those) {
-		Block.BlockList output = new Block.BlockList();
+	public static BlockList xor( List<BlockList> those) {
+		BlockList output = new BlockList();
 		int nBlocks = those.get(0).size();
 		for (int iBlock = 0; iBlock < nBlocks; iBlock++) {
 			Block block = new Block(those.get(0).getList().get(iBlock));
@@ -76,7 +72,7 @@ class Block {
 		return output;
 	}
 	
-	public static void pad( Block.BlockList those, int n ) {
+	public static void pad( BlockList those, int n ) {
 		List<Block> blocks = those.getList();
 		int m = blocks.size();
 		for (int i = m; i < n; i++) {
@@ -87,116 +83,8 @@ class Block {
 		}
 	}
 	
-	public static class BlockListIterator implements Iterator<Block> {
-		protected Iterator<Block> it;
-		protected Block current;
-		
-		public BlockListIterator( Iterator<Block> it ) {
-			this.it = it;
-		}
-		
-		@Override
-		public synchronized boolean hasNext() {
-			return it.hasNext();
-		}
-
-
-		@Override
-		public synchronized Block next() {
-			current = it.next();
-			return current;
-		}
-		
-		public Block current() {
-			return current;
-		}
-		
-		
-	}
-	public static class BlockList {
-		
-		protected ArrayList<Block> list;
-		
-		public BlockList() {
-			list = new ArrayList<>();
-		}
-		
-		
-		public synchronized void add( Block block ) {
-			list.add(block);
-		}
-		
-		public int length() {
-			int n = 0;
-			for (Block block : list) {
-				n += block.count;
-			}
-			return n;
-		}
-
-		public int size() {
-			return list.size();
-		}
-
-		public BlockListIterator getIterator() {
-			return new BlockListIterator(list.iterator());
-		}
-		
-		public Block getFirst() {
-			return list.get(0);
-		}
-		
-		public Block getLast() {
-			return list.get(list.size()-1);
-		}
-		
-		public List<Block> getList() {
-			return list;
-		}
-	}
-	
-	public static class BlockInputStream extends InputStream {
-		
-		protected Block.BlockList blocks;
-		protected BlockListIterator it;
-		protected Block block;
-		protected int i = BLOCK_SIZE;
-		
-		public BlockInputStream( Block.BlockList blocks ) {
-			this.blocks = blocks;
-			this.it = blocks.getIterator();
-		}
-		
-		
-		@Override
-		public int read() throws IOException {
-			if (i >= BLOCK_SIZE) {
-				if (it.hasNext()) {
-					block = it.next();
-					i = 0;
-				} else {
-					return -1;
-				}
-			}
-			if (i >= block.count)
-				return -1;
-			return 0xFF & ((int) block.contents[i++]);
-		}
-
-
-		@Override
-		public int available() throws IOException {
-			if (block != null)
-				return (it.hasNext()) ? BLOCK_SIZE : block.count - i;
-			else if (it.hasNext())
-				return BLOCK_SIZE;
-			else
-				return 0;
-		}
-	}
-	
 	public static void main(String[] args) {
-		Block.BlockList blocks = new Block.BlockList();
+		BlockList blocks = new BlockList();
 		Block block = new Block();
 		Arrays.fill(block.contents, (byte)100);
 		block.count = Block.BLOCK_SIZE;

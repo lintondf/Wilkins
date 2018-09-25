@@ -5,7 +5,6 @@ import static org.junit.Assert.*;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -14,15 +13,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 
-import javax.crypto.spec.SecretKeySpec;
-
 import org.apache.commons.io.IOUtils;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
-
 import com.google.common.io.BaseEncoding;
 
 public class ShuffledInterlaceMixerTest {

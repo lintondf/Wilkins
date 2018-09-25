@@ -47,8 +47,6 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.cryptonomicon.Block.BlockInputStream;
-
 import com.google.common.io.BaseEncoding;
 import com.google.common.primitives.Bytes;
 import com.kosprov.jargon2.api.Jargon2.Hasher;

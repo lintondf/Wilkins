@@ -29,8 +29,6 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.commons.io.IOUtils;
-import org.cryptonomicon.Block.BlockInputStream;
-import org.cryptonomicon.Block.BlockListIterator;
 
 import com.google.common.io.BaseEncoding;
 
@@ -44,7 +42,7 @@ class BlockedFile {
 	};
 
 	public State state;
-	public Block.BlockList blocks;
+	public BlockList blocks;
 	
 	protected static Cipher cipher = null;
 	
@@ -69,7 +67,7 @@ class BlockedFile {
 		file = null;
 		secretKey = new SecretKeySpec(key, "AES");
 		length = nBlocks * Block.BLOCK_SIZE;
-		blocks = new Block.BlockList();
+		blocks = new BlockList();
 		Block.pad(blocks, nBlocks);
 		state = State.RAW;
 	}
@@ -81,7 +79,7 @@ class BlockedFile {
 		file = null;
 		secretKey = new SecretKeySpec(key, "AES");
 		length = contents.length;
-		blocks = new Block.BlockList();
+		blocks = new BlockList();
 		Block block = new Block(contents);
 		blocks.add(block);
 		state = State.RAW;
@@ -134,7 +132,7 @@ class BlockedFile {
 			} else {
 				dis = new DeflaterInputStream(new BlockInputStream(blocks), compressor);
 			}
-			Block.BlockList blocks = new Block.BlockList();
+			BlockList blocks = new BlockList();
 			BufferedInputStream bis = new BufferedInputStream(dis);
 
 			// Compress the data
@@ -197,7 +195,7 @@ class BlockedFile {
 			cipher.init(mode, secretKey, parameterSpec);
 			BlockInputStream bis = new BlockInputStream(blocks);
 			CipherInputStream cis = new CipherInputStream( bis, cipher );
-			Block.BlockList output = new Block.BlockList();
+			BlockList output = new BlockList();
 			Block block = new Block();
 			while (true) {
 				int length = cis.read(block.contents, block.count, Block.BLOCK_SIZE - block.count );
