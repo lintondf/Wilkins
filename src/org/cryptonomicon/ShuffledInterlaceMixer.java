@@ -12,6 +12,7 @@ import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
+import java.util.logging.Level;
 import java.util.zip.InflaterOutputStream;
 
 import javax.crypto.CipherOutputStream;
@@ -24,7 +25,6 @@ public class ShuffledInterlaceMixer implements Mixer {
 	
 	private <T> void permute( Random random, ArrayList<T> iterators ) {
 		int n = iterators.size();
-		if (n > 0) return; ///////????????????????????????
 		while (n > 1) {
 			int k = random.nextInt(n--); // decrements after using the value
 			T temp = iterators.get(n);
@@ -56,19 +56,17 @@ public class ShuffledInterlaceMixer implements Mixer {
 		if ( ((int) length % Block.BLOCK_SIZE) > 0)
 			nBlocks++;
 		int remaining = (int) length;
+		Wilkins.getLogger().log(Level.FINE, String.format("Read Blocks %d from %d of %d\n", nBlocks, fileModulus, length ));
 		for (int iBlock = 0; iBlock < nBlocks; iBlock++) {
 			permute( random, shuffled );
 			for (BlockReader reader : shuffled) {
 				reader.readFull();
-				if (iBlock >= 13 && iBlock <= 14) System.out.printf( "R%d,%d %s\n", iBlock, readers.indexOf(reader), reader.getLast().toString() );
+				Wilkins.getLogger().log(Level.FINEST, String.format( "R%d,%d %s\n", iBlock, readers.indexOf(reader), reader.getLast().toString() ) );
 			}
 			Block allXor = readers.get(nFiles).getLast();
-			//if (iBlock == 0) System.out.println( "readBlocks XORALL B0: " + allXor.toString() );
 			Block allButTarget = readers.get(fileModulus).getLast();
-			//if (iBlock == 0) System.out.println( "readBlocks XORBUT B0: " + allButTarget.toString() );
 			allXor = allXor.xor( allButTarget );
-			//if (iBlock == 0) System.out.println( "readBlocks output B0: " + allXor.toString() );
-			//System.out.printf("%3d %3d  %8d / %s\n", iBlock, nBlocks, remaining, allXor.toString() );
+			Wilkins.getLogger().log(Level.FINEST, String.format("%3d %3d  %8d / %s\n", iBlock, nBlocks, remaining, allXor.toString() ));
 			cos.write(allXor.contents, 0, (remaining > Block.BLOCK_SIZE) ? Block.BLOCK_SIZE : remaining );
 			remaining -= Block.BLOCK_SIZE;
 		}
@@ -84,6 +82,9 @@ public class ShuffledInterlaceMixer implements Mixer {
 			ArrayList<BlockedFile> allFiles, RandomAccessFile writer)
 			throws IOException {
 		// generate xor'd data blocks: {for-each-i {xor(all but i)}, xor all}
+		for (BlockedFile file : allFiles) {
+			Wilkins.getLogger().log(Level.FINEST, String.format("of %d\n", file.length ) );
+		}
 		ArrayList<Block.BlockList> allLists = new ArrayList<>();
 		for (BlockedFile file : allFiles) {
 			allLists.add( file.blocks );
@@ -99,18 +100,18 @@ public class ShuffledInterlaceMixer implements Mixer {
 		}
 		iterators.add( xorOfAll.getIterator() ); // in file order
 		shuffled.addAll( iterators );
-		System.out.printf("WriteBlocks %d %d @ %d\n", maxBlocks, iterators.size(), writer.getFilePointer() );
+		Wilkins.getLogger().log(Level.FINEST, String.format("WriteBlocks %d %d @ %d\n", maxBlocks, iterators.size(), writer.getFilePointer() ) );
 		
 		for (int iBlock = 0; iBlock < maxBlocks; iBlock++) {
 			permute( random, shuffled );
 			for (Block.BlockListIterator it : shuffled) {
 				Block block = it.next();
-				if (iBlock >= 13 && iBlock <= 14) System.out.printf( "W%d,%d %s\n", iBlock, iterators.indexOf(it), block.toString() );
+				//if (iBlock >= 13 && iBlock <= 14) System.out.printf( "W%d,%d %s\n", iBlock, iterators.indexOf(it), block.toString() );
 				writer.write( block.contents, 0, Block.BLOCK_SIZE );
-				//System.out.printf("%d,%d @ %d\n", iBlock, iterators.indexOf(it), writer.getFilePointer() );
+				Wilkins.getLogger().log(Level.FINEST, String.format("%d,%d @ %d\n", iBlock, iterators.indexOf(it), writer.getFilePointer() ) );
 			}
 		}
-		//System.out.printf("WriteBlocks Final: %d\n", writer.getFilePointer());
+		Wilkins.getLogger().log(Level.FINEST, String.format("WriteBlocks Final: %d\n", writer.getFilePointer()));
 		writer.close();
 		return true;
 	}

@@ -22,11 +22,20 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.EnumSet;
+import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Random;
 import java.util.ArrayList;
+import java.util.logging.FileHandler;
+import java.util.logging.Formatter;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 import java.util.zip.InflaterOutputStream;
 import java.util.zip.ZipOutputStream;
 
@@ -79,19 +88,84 @@ public class Wilkins {
 	protected int hashLength = keyLength / 8;
 	private Cipher cipher;
 	
+	protected static Logger logger = Logger.getLogger("wilkins");
+	protected static FileHandler logFileHandler = null;
+	protected static SimpleDateFormat logTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+
+	public static Logger getLogger() {
+		return logger;
+	}
+	
+	public static void setLevel(Level level) {
+		logger.setLevel(level);
+	}
+
 	protected Mixer mixer = new ShuffledInterlaceMixer();
 
 	protected Hasher defaultHasher =  com.kosprov.jargon2.api.Jargon2.jargon2Hasher().type(type).version(version)
 			.memoryCost(memoryCost).timeCost(timeCost).parallelism(parallelism)
 			.hashLength(hashLength);
+	
+	protected static class ReportLogFormatter extends Formatter {
+        @Override
+        public String format(LogRecord record) {
+            Calendar cal = new GregorianCalendar();
+            cal.setTimeInMillis(record.getMillis());
+            String msg = String.format("%-8s", record.getLevel()) + " , "
+                    + logTime.format(cal.getTime())
+                    + ", "
+                    + record.getSourceClassName().substring(
+                            record.getSourceClassName().lastIndexOf(".")+1,
+                            record.getSourceClassName().length())
+                    + "::"
+                    + record.getSourceMethodName()
+                    + ", "
+                    + record.getMessage() + "\n";
+            if (record.getThrown() != null) {
+            	StringBuffer sb = new StringBuffer();
+            	Throwable t = record.getThrown();
+            	sb.append( t.getMessage() );
+            	sb.append('\n');
+            	msg += sb.toString();
+            }
+            return msg;
+        }
+	}
+
+	
+	protected static void initializeLogging() {
+	    try {
+	        logFileHandler = new FileHandler("wilkins.log");
+//	        logFileHandler = new FileHandler("wilkins-%g.log", 1*1024*1024, 10);
+	    } catch (Exception e) {
+			getLogger().log(Level.SEVERE, "EXCEPTION: ", e );
+	        return;
+	    }
+	    logFileHandler.setFormatter(new ReportLogFormatter());
+	    logger.addHandler(logFileHandler);
+	    logger.setUseParentHandlers(false);  // no console logging
+	    Handler[] handlers = logger.getParent().getHandlers();
+	    for (Handler handler : handlers ) {
+	    	handler.setFormatter(new ReportLogFormatter());
+	    }
+	    logger.setLevel(Level.ALL);  // changed by configuration
+	}
+
+
 			
 	public Wilkins() {
-		//System.out.println( type.toString() + " " + version.toString() );
+		initializeLogging();
+		getLogger().info( type.toString() + " " + version.toString() );
 		try {
 			cipher = Cipher.getInstance("AES/CBC/NoPadding");
 		} catch (Exception e) {
-			e.printStackTrace();
+			getLogger().log(Level.SEVERE, "Unable to configure cryptography", e);
 		}
+	}
+	
+	public Wilkins( Mixer mixer) {
+		this();
+		this.mixer = mixer;
 	}
 
 	public boolean addDataFile(String path, FileHeader fileHeader, String passPhrase) {
@@ -101,7 +175,7 @@ public class Wilkins {
 				return false;
 			byte[] key = fileHeader.getHasher().password(passPhrase.getBytes()).rawHash();
 			BlockedFile pair = new BlockedFile(file, key);
-			System.out.printf("%-16s %s %s %d\n", path, toString(key), passPhrase, pair.length );
+			getLogger().info(String.format("adding %-16s %s %s %d", path, toString(key), passPhrase, pair.length ));
 			maxLength = Math.max(maxLength, pair.length);
 			dataFiles.add(pair);
 			return true;
@@ -279,62 +353,6 @@ public class Wilkins {
 		baseRandom.setSeed(seed);
 		return mixer.writeBlocks( baseRandom, maxBlocks, allFiles, writer );
 	}
-	
-//	protected boolean writeBlocks( Random random, int maxBlocks, ArrayList<BlockedFile> allFiles, BufferedOutputStream bos ) throws IOException {
-//		// generate xor'd data blocks: {for-each-i {xor(all but i)}, xor all}
-//		ArrayList<Block.BlockList> allLists = new ArrayList<>();
-//		for (BlockedFile file : allFiles) {
-//			allLists.add( file.blocks );
-//		}
-//		Block.BlockList xorOfAll = Block.xor(allLists);
-//		ArrayList<Block.BlockList> xorExcept = new ArrayList<>();
-//		ArrayList<Block.BlockListIterator> iterators = new ArrayList<>();
-//		ArrayList<Block.BlockListIterator> shuffled = new ArrayList<>();
-//		for (int iList = 0; iList < allLists.size(); iList++) {
-//			Block.BlockList blockList = Block.xor( xorOfAll, allLists.get(iList) );
-//			xorExcept.add( blockList );
-//			iterators.add( blockList.getIterator() );
-//		}
-//		iterators.add( xorOfAll.getIterator() ); // in file order
-//		shuffled.addAll( iterators );
-//		
-//		for (int iBlock = 0; iBlock < maxBlocks; iBlock++) {
-//			permute( random, shuffled );
-//			for (Block.BlockListIterator it : shuffled) {
-//				Block block = it.next();
-//				//System.out.printf( "W%d %s\n", iBlock, block.toString() );
-//				bos.write( block.contents, 0, block.count );
-//			}
-//		}
-//		bos.close();
-//		return true;
-//	}
-//
-//	protected boolean readBlocks( PayloadFileGuidance fileGuidance, Random random, RandomAccessFile file, BufferedOutputStream bos ) throws IOException {
-//		int nFiles = fileGuidance.getFileCount(); 
-//		long length = fileGuidance.getLength();
-//		int fileModulus = fileGuidance.getFileOrdinal();
-//		int maxBlocks = fileGuidance.getMaxBlocks();
-//		ArrayList<BlockReader> readers = new ArrayList<>();
-//		for (int i = 0; i < nFiles+1; i++) {
-//			readers.add( new BlockReader(file, length ) );
-//		}
-//		ArrayList<BlockReader> shuffled = new ArrayList<>();
-//		shuffled.addAll(readers);
-//		for (int iBlock = 0; iBlock < maxBlocks; iBlock++) {
-//			permute( random, shuffled );
-//			for (BlockReader reader : shuffled) {
-//				reader.read();
-//				//System.out.printf( "R%d %s\n", iBlock, reader.getLast().toString() );
-//			}
-//			Block allXor = readers.get(nFiles).getLast();
-//			Block allButTarget = readers.get(fileModulus).getLast();
-//			allXor = allXor.xor( allButTarget );
-//			bos.write(allXor.contents);
-//		}
-//		bos.close();
-//		return true;
-//	}
 	
 	
 	public void report() {
