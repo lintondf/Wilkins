@@ -1,36 +1,23 @@
 package org.cryptonomicon;
 
 import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterOutputStream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
 import javax.crypto.CipherOutputStream;
 import javax.crypto.SecretKey;
-import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-
-import org.apache.commons.io.IOUtils;
-
-import com.google.common.io.BaseEncoding;
 
 class BlockedFile {
 	public File file;
@@ -157,7 +144,6 @@ class BlockedFile {
 			length = blocks.length();
 			return blocks.size();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			return -1;
 		}
@@ -211,6 +197,7 @@ class BlockedFile {
 				output.add(block);				
 			}
 			blocks = output;
+			cis.close();
 			return blocks.size();
 			
 		} catch (Exception x) {
@@ -273,6 +260,7 @@ class BlockedFile {
 			}
 			String output = new String( bos.toByteArray() );
 			System.out.println(output);
+			cos.close();
 		} catch (Exception x) {
 			x.printStackTrace();
 		}
