@@ -68,7 +68,7 @@ class BlockedFile {
 		secretKey = new SecretKeySpec(key, "AES");
 		length = nBlocks * Block.BLOCK_SIZE;
 		blocks = new BlockList();
-		Block.pad(blocks, nBlocks);
+		BlockList.pad(blocks, nBlocks);
 		state = State.RAW;
 	}
 	
@@ -87,7 +87,7 @@ class BlockedFile {
 
 	public void pad(int count) {
 		blocks.getList().get(blocks.getList().size() - 1).pad();
-		Block.pad(blocks, count);
+		BlockList.pad(blocks, count);
 	}
 	
 	public InputStream getInputStream(InputStream is, byte[] iv) {

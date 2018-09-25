@@ -1,8 +1,6 @@
 package org.cryptonomicon;
 
-import java.io.ByteArrayInputStream;
 import java.util.Arrays;
-import java.util.List;
 
 import com.google.common.io.BaseEncoding;
 
@@ -49,40 +47,6 @@ class Block {
 		return String.format("%4d: %s", count, BaseEncoding.base16().lowerCase().encode(Arrays.copyOf(contents, count)));
 	}
 	
-	public static BlockList xor( BlockList one, BlockList two) {
-		BlockList output = new BlockList();
-		int nBlocks = one.size();
-		for (int iBlock = 0; iBlock < nBlocks; iBlock++) {
-			Block block = new Block( one.getList().get(iBlock) );
-			output.add(block.xor( two.getList().get(iBlock)));
-		}
-		return output;
-	}
-	
-	public static BlockList xor( List<BlockList> those) {
-		BlockList output = new BlockList();
-		int nBlocks = those.get(0).size();
-		for (int iBlock = 0; iBlock < nBlocks; iBlock++) {
-			Block block = new Block(those.get(0).getList().get(iBlock));
-			for (int jList = 1; jList < those.size(); jList++) {
-				block = block.xor( those.get(jList).getList().get(iBlock));
-			}
-			output.add(block);
-		}
-		return output;
-	}
-	
-	public static void pad( BlockList those, int n ) {
-		List<Block> blocks = those.getList();
-		int m = blocks.size();
-		for (int i = m; i < n; i++) {
-			Block block = new Block();
-			Wilkins.secureRandom.nextBytes(block.contents);
-			block.count = block.contents.length;
-			blocks.add( block );
-		}
-	}
-	
 	public static void main(String[] args) {
 		BlockList blocks = new BlockList();
 		Block block = new Block();
@@ -103,6 +67,7 @@ class Block {
 				if (ch == -1)
 					break;
 			}
+			bis.close();
 		} catch (Exception x) {
 			x.printStackTrace();
 		}

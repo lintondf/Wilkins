@@ -89,12 +89,12 @@ public class ShuffledInterlaceMixer implements Mixer {
 		for (BlockedFile file : allFiles) {
 			allLists.add( file.blocks );
 		}
-		BlockList xorOfAll = Block.xor(allLists);
+		BlockList xorOfAll = BlockList.xor(allLists);
 		ArrayList<BlockList> xorExcept = new ArrayList<>();
 		ArrayList<BlockListIterator> iterators = new ArrayList<>();
 		ArrayList<BlockListIterator> shuffled = new ArrayList<>();
 		for (int iList = 0; iList < allLists.size(); iList++) {
-			BlockList blockList = Block.xor( xorOfAll, allLists.get(iList) );
+			BlockList blockList = BlockList.xor( xorOfAll, allLists.get(iList) );
 			xorExcept.add( blockList );
 			iterators.add( blockList.getIterator() );
 		}
