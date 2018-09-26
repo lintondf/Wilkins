@@ -80,7 +80,7 @@ public class BlockTest {
 		b1.count = 5;
 		Arrays.fill(b1.contents, (byte) 0x01 );
 		String result = b1.toString();
-		System.out.println( b1.toString() );
+		//System.out.println( b1.toString() );
 		assertTrue( result.equals("   5: 0101010101") );
 	}
 }

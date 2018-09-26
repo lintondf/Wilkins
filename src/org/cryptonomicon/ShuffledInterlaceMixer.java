@@ -149,7 +149,7 @@ public class ShuffledInterlaceMixer implements Mixer {
 				ByteArrayOutputStream bos = new ByteArrayOutputStream();
 				OutputStream cos = allFiles.get(i).getOutputStream(bos, iv);
 				mixer.readBlocks( fileGuidance, random, raf, cos );
-				System.out.println( i + ": " + Wilkins.toString( bos.toByteArray() ));
+				//System.out.println( i + ": " + Wilkins.toString( bos.toByteArray() ));
 				if (! Arrays.equals(bos.toByteArray(), contentsList.get(i)))
 					System.err.println("No Match");
 			} catch (IOException e) {
