@@ -35,8 +35,7 @@ public class GpgCamouflage {
 		0000020    ff  00  12  57  22  01 
 	 */
 	
-	public static final byte[] gpgHeader1 = BaseEncoding.base16().lowerCase()
-			.decode("8c0d04070302");
+	public static final byte[] gpgHeader1 = BaseEncoding.base16().lowerCase().decode("8c0d04070302");
 	
 	private static final int gpgHeader2_Size = 7;
 	

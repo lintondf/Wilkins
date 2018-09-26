@@ -47,7 +47,10 @@ import com.google.common.primitives.Longs;
 
 class PayloadFileGuidance {
 	
-	public byte[] guidance = new byte[32];
+	private int SIZE = 32;
+	
+	private byte[] plainText = new byte[SIZE];
+	private byte[] cipherText = null;
 	
 	public PayloadFileGuidance(int maxBlocks, int nm, int modulus, long seed, int length ) {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -60,25 +63,25 @@ class PayloadFileGuidance {
 			byte[] filler = new byte[10];             //18 ..27  10 bytes
 			Wilkins.secureRandom.nextBytes(filler);
 			bos.write( filler );
-			guidance = bos.toByteArray();             // 28 bytes
+			plainText = bos.toByteArray();             // 28 bytes
 			
 			Checksum checksum = new CRC32();
-			checksum.update( guidance, 0, guidance.length );
+			checksum.update( plainText, 0, plainText.length );
 			byte[] crc = Longs.toByteArray( checksum.getValue() );
 			bos.write(crc, 4, 4 );                    //28 ..31  4 bytes
-			guidance = bos.toByteArray();
+			plainText = bos.toByteArray();
 		} catch (IOException e) {
 			e.printStackTrace();
-			guidance = null;
+			plainText = null;
 		}
 	}
 	
 	public PayloadFileGuidance(RandomAccessFile file) {
 		try {
-			file.read(guidance);
+			file.read(plainText);
 			//System.out.println(BaseEncoding.base16().lowerCase().encode(guidance));
 		} catch (IOException e) {
-			guidance = null;
+			plainText = null;
 		}
 	}
 	
@@ -86,8 +89,7 @@ class PayloadFileGuidance {
 		IvParameterSpec parameterSpec = new IvParameterSpec(iv);
 		try {
 			cipher.init(Cipher.DECRYPT_MODE, key, parameterSpec);
-			byte[] cipherText = cipher.doFinal(guidance);
-			guidance = cipherText;
+			plainText = cipher.doFinal(cipherText);
 			return true;
 		} catch (InvalidKeyException | InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException e) {
 			e.printStackTrace();
@@ -99,8 +101,7 @@ class PayloadFileGuidance {
 		IvParameterSpec parameterSpec = new IvParameterSpec(iv);
 		try {
 			cipher.init(Cipher.ENCRYPT_MODE, key, parameterSpec);
-			byte[] cipherText = cipher.doFinal(guidance);
-			guidance = cipherText;
+			cipherText = cipher.doFinal(plainText);
 			return true;
 		} catch (InvalidKeyException | InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException e) {
 			e.printStackTrace();
@@ -109,46 +110,66 @@ class PayloadFileGuidance {
 	}
 	
 	public boolean isValid() {
-		if (guidance == null)
+		if (plainText == null || plainText.length != SIZE)
 			return false;
-		byte[] content = Arrays.copyOf(guidance, 28);
+		byte[] content = Arrays.copyOf(plainText, 28);
 		Checksum checksum = new CRC32();
 		checksum.update( content, 0, content.length );
 		byte[] crc = Longs.toByteArray( checksum.getValue() );
 		crc = Arrays.copyOfRange(crc, 4, 8);
-		return Arrays.equals(crc, Arrays.copyOfRange(guidance, 28, 32));
+		return Arrays.equals(crc, Arrays.copyOfRange(plainText, 28, 32));
 	}
 	
-	
-	public byte[] getCipherText() {
-		return guidance;
-	}
-	
-	public byte[] getPlainText() {
-		return guidance;
-	}
 	
 	public int getMaxBlocks() {
-		return Ints.fromByteArray( Arrays.copyOfRange(guidance, 0, 4));
+		return Ints.fromByteArray( Arrays.copyOfRange(plainText, 0, 4));
 	}
 	
 	public int getFileCount() {
-		return guidance[4];
+		return plainText[4];
 	}
 	
 	public int getFileOrdinal() {
-		return guidance[5];
+		return plainText[5];
 	}
 	
 	public Long getSeed() {
-		return Longs.fromByteArray(Arrays.copyOfRange(guidance, 6, 14));
+		return Longs.fromByteArray(Arrays.copyOfRange(plainText, 6, 14));
 	}
 	
 	public int getLength() {
-		return Ints.fromByteArray(Arrays.copyOfRange(guidance, 14, 18));
+		return Ints.fromByteArray(Arrays.copyOfRange(plainText, 14, 18));
 	}
 	
 	public String toString() {
 		return String.format("%d %d %d %d %d %b", getMaxBlocks(), getFileCount(), getFileOrdinal(), getSeed(), getLength(), isValid() );
+	}
+
+	/**
+	 * @return the plainText
+	 */
+	public byte[] getPlainText() {
+		return plainText;
+	}
+
+	/**
+	 * @param plainText the plainText to set
+	 */
+	public void setPlainText(byte[] plainText) {
+		this.plainText = plainText;
+	}
+
+	/**
+	 * @return the cipherText
+	 */
+	public byte[] getCipherText() {
+		return cipherText;
+	}
+
+	/**
+	 * @param cipherText the cipherText to set
+	 */
+	public void setCipherText(byte[] cipherText) {
+		this.cipherText = cipherText;
 	}
 }

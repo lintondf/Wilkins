@@ -3,31 +3,16 @@
  */
 package org.cryptonomicon;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
-import java.math.BigInteger;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.EnumSet;
 import java.util.GregorianCalendar;
-import java.util.List;
 import java.util.Random;
 import java.util.ArrayList;
 import java.util.logging.FileHandler;
@@ -37,18 +22,13 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import java.util.zip.InflaterOutputStream;
-import java.util.zip.ZipOutputStream;
-
 import javax.crypto.Cipher;
-import javax.crypto.CipherInputStream;
 import javax.crypto.CipherOutputStream;
-import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import com.google.common.io.BaseEncoding;
-import com.google.common.primitives.Bytes;
 import com.kosprov.jargon2.api.Jargon2.Hasher;
 import com.kosprov.jargon2.api.Jargon2.Type;
 import com.kosprov.jargon2.api.Jargon2.Verifier;
@@ -155,7 +135,7 @@ public class Wilkins {
 		initializeLogging();
 		getLogger().info( type.toString() + " " + version.toString() );
 		try {
-			cipher = Cipher.getInstance("AES/CBC/NoPadding");
+			setCipher(Cipher.getInstance("AES/CBC/NoPadding"));
 		} catch (Exception e) {
 			getLogger().log(Level.SEVERE, "Unable to configure cryptography", e);
 		}
@@ -164,6 +144,20 @@ public class Wilkins {
 	public Wilkins( Mixer mixer) {
 		this();
 		this.mixer = mixer;
+	}
+
+	/**
+	 * @return the cipher
+	 */
+	public Cipher getCipher() {
+		return cipher;
+	}
+
+	/**
+	 * @param cipher the cipher to set
+	 */
+	public void setCipher(Cipher cipher) {
+		this.cipher = cipher;
 	}
 
 	public boolean addDataFile(String path, FileHeader fileHeader, String passPhrase) {
@@ -229,7 +223,7 @@ public class Wilkins {
 		PayloadFileGuidance targetGuidance = null;
 		while (file.getFilePointer() < file.length()) {
 			PayloadFileGuidance fileGuidance = new PayloadFileGuidance(file);
-			if (fileGuidance.decode(cipher, secretKey, fileHeader.getIV(fileIndex++))) {
+			if (fileGuidance.decode(getCipher(), secretKey, fileHeader.getIV(fileIndex++))) {
 				if (fileGuidance.isValid()) {
 					targetGuidance = fileGuidance;
 					break;
@@ -251,8 +245,8 @@ public class Wilkins {
 			IvParameterSpec parameterSpec = new IvParameterSpec(fileHeader.getIV(targetGuidance.getFileOrdinal()));
 			System.out.println( toString(parameterSpec.getIV()));
 			System.out.println( toString(secretKey.getEncoded()));
-			cipher.init(Cipher.DECRYPT_MODE, secretKey, parameterSpec);
-			CipherOutputStream cos = new CipherOutputStream( ios, cipher );
+			getCipher().init(Cipher.DECRYPT_MODE, secretKey, parameterSpec);
+			CipherOutputStream cos = new CipherOutputStream( ios, getCipher() );
 			return mixer.readBlocks( targetGuidance, baseRandom, file, cos );
 		} catch (Exception x) {
 			x.printStackTrace();
@@ -339,10 +333,10 @@ public class Wilkins {
 		for (int modulus : moduli) {
 			BlockedFile file = allFiles.get(modulus);
 			PayloadFileGuidance fileGuidance = new PayloadFileGuidance(maxBlocks, moduli.length, modulus, seed, (int) file.length );
-			System.out.printf("FILE %d: (%d) %s\n", modulus, fileGuidance.guidance.length, 
-					BaseEncoding.base16().lowerCase().encode(fileGuidance.guidance));
+			System.out.printf("FILE %d: (%d) %s\n", modulus, fileGuidance.getPlainText().length, 
+					BaseEncoding.base16().lowerCase().encode(fileGuidance.getPlainText()));
 			//System.out.println( fileGuidance.toString() );
-			fileGuidance.encode( cipher, file.secretKey, fileHeader.getIV(guidanceOrdinal++) );
+			fileGuidance.encode( getCipher(), file.secretKey, fileHeader.getIV(guidanceOrdinal++) );
 			writer.write( fileGuidance.getCipherText() );
 			//System.out.printf("      : %s\n", toString(fileGuidance.getCipherText()));
 		}
@@ -567,9 +561,9 @@ public class Wilkins {
 		byte[] key = new byte[ipmec.hashLength];
 		SecretKey secretKey = new SecretKeySpec(key, "AES");
 		byte[] iv = new byte[Wilkins.AES_IV_BYTES];
-		g.encode(ipmec.cipher, secretKey, iv);
+		g.encode(ipmec.getCipher(), secretKey, iv);
 		System.out.println( toString( g.getCipherText()) );
-		g.decode(ipmec.cipher, secretKey, iv);
+		g.decode(ipmec.getCipher(), secretKey, iv);
 		System.out.println( toString( g.getPlainText()) );
 		System.out.println(g.toString());		
 	}

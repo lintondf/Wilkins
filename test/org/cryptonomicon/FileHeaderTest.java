@@ -62,13 +62,13 @@ public class FileHeaderTest {
 			
 			FileHeader h2 = new FileHeader( raf );
 			
-			assertTrue( fileHeader.isValid() );
-			assertTrue( fileHeader.getType() == Type.ARGON2i);
-			assertTrue( fileHeader.getVersion() == Version.V10 );
-			assertTrue( fileHeader.getMemoryCost() == 1024 );
-			assertTrue( fileHeader.getTimeCost() == 5 );
-			assertTrue( fileHeader.getKeySize() == 256 );
-			byte[] check = fileHeader.getSalt();
+			assertTrue( h2.isValid() );
+			assertTrue( h2.getType() == Type.ARGON2i);
+			assertTrue( h2.getVersion() == Version.V10 );
+			assertTrue( h2.getMemoryCost() == 1024 );
+			assertTrue( h2.getTimeCost() == 5 );
+			assertTrue( h2.getKeySize() == 256 );
+			byte[] check = h2.getSalt();
 			assertTrue( check != null && Arrays.equals(salt,  check) );
 			
 			raf.close();
