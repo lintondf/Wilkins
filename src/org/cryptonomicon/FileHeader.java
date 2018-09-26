@@ -27,23 +27,13 @@ import com.kosprov.jargon2.api.Jargon2.Version;
  * [n+m]*L0 contents bytes in 1024 byte blocks ordered randomly per permutation
  */
 
-class FileHeader {
+class FileHeader extends EncryptableHeader {
 	
 	public static final int SIZE = 64;
 	private static final int CRC_SIZE = 4;
 	
-	public byte[] header = new byte[SIZE];
-	
 	public FileHeader( Type type, Version version, int memoryCost, int timeCost, int keySize, byte[] salt) {
-//		Wilkins.secureRandom.nextBytes(header);
-//		header[0] = (byte) type.ordinal();
-//		header[1] = (byte) version.ordinal();
-//		header[2] = (byte) (memoryCost/1024);
-//		header[3] = (byte) timeCost;
-//		header[4] = (byte) (keySize / 8);
-//		for (int i = 0; i < salt.length; i++) {
-//			header[32+i] = salt[i];
-//		}
+		super(SIZE);
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		try {
 			bos.write( (byte) type.ordinal());                       // 0
@@ -55,25 +45,26 @@ class FileHeader {
 			byte[] filler = new byte[SIZE - bos.size() - CRC_SIZE];       
 			Wilkins.secureRandom.nextBytes(filler);
 			bos.write( filler );
-			header = bos.toByteArray();             
+			plainText = bos.toByteArray();             
 			
 			Checksum checksum = new CRC32();
-			checksum.update( header, 0, header.length );
+			checksum.update( plainText, 0, plainText.length );
 			byte[] crc = Longs.toByteArray( checksum.getValue() );
 			bos.write(crc, 4, 4 );                    
-			header = bos.toByteArray();
+			plainText = bos.toByteArray();
 		} catch (IOException e) {
 			e.printStackTrace();
-			header = null;
+			plainText = null;
 		}
 		
 	}
 	
 	public FileHeader(RandomAccessFile file) {
+		super(SIZE);
 		try {
-			file.read(header);
+			file.read(plainText);
 		} catch (IOException e) {
-			header = null;
+			plainText = null;
 		}
 	}
 	
@@ -87,43 +78,43 @@ class FileHeader {
 	}
 	
 	public boolean isValid() {
-		if ( header == null || header.length != SIZE)
+		if ( plainText == null || plainText.length != SIZE)
 			return false;
-		byte[] content = Arrays.copyOf(header, SIZE - CRC_SIZE);
+		byte[] content = Arrays.copyOf(plainText, SIZE - CRC_SIZE);
 		Checksum checksum = new CRC32();
 		checksum.update( content, 0, content.length );
 		byte[] crc = Longs.toByteArray( checksum.getValue() );
 		crc = Arrays.copyOfRange(crc, 4, 8);
-		return Arrays.equals(crc, Arrays.copyOfRange(header, SIZE - CRC_SIZE, SIZE));		
+		return Arrays.equals(crc, Arrays.copyOfRange(plainText, SIZE - CRC_SIZE, SIZE));		
 	}
 
 	public Type getType() {
-		return Type.values()[header[0]];
+		return Type.values()[plainText[0]];
 	}
 	
 	public Version getVersion() {
-		return Version.values()[header[1]];
+		return Version.values()[plainText[1]];
 	}
 	
 	public int getMemoryCost() {
-		return Ints.fromByteArray( Arrays.copyOfRange(header, 2, 6) );
+		return Ints.fromByteArray( Arrays.copyOfRange(plainText, 2, 6) );
 	}
 	
 	public int getTimeCost() {
-		return Ints.fromByteArray( Arrays.copyOfRange(header, 6, 10) );
+		return Ints.fromByteArray( Arrays.copyOfRange(plainText, 6, 10) );
 	}
 	
 	public int getKeySize() {
-		return Ints.fromByteArray( Arrays.copyOfRange(header, 10, 14) );
+		return Ints.fromByteArray( Arrays.copyOfRange(plainText, 10, 14) );
 	}
 	
 	public byte[] getSalt() {
 		int hashLength = getKeySize()/8;
-		return Arrays.copyOfRange(header,  14, 14+hashLength);
+		return Arrays.copyOfRange(plainText,  14, 14+hashLength);
 	}
 	
 	public byte[] getIV(int offset) {
-		return Arrays.copyOfRange(header, 14, 14+Wilkins.AES_IV_BYTES);
+		return Arrays.copyOfRange(plainText, 14, 14+Wilkins.AES_IV_BYTES);
 	}
 	
 	public String toString() {

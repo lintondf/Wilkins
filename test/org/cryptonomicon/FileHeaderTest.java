@@ -57,7 +57,7 @@ public class FileHeaderTest {
 		try {
 			file = File.createTempFile("testFileHeader", "bin");
 			RandomAccessFile raf = new RandomAccessFile( file, "rw" );
-			raf.write( fileHeader.header, 0, fileHeader.header.length);
+			raf.write( fileHeader.getPlainText(), 0, fileHeader.getPlainText().length);
 			raf.seek(0L);
 			
 			FileHeader h2 = new FileHeader( raf );
@@ -104,11 +104,11 @@ public class FileHeaderTest {
 		byte[] salt = new byte[256/8];
 		FileHeader fileHeader = new FileHeader( Type.ARGON2i, Version.V10, 1024, 5, 256, salt );
 		assertTrue( fileHeader.isValid() );
-		fileHeader.header[0] = (byte) (0x01 ^ fileHeader.header[0]);
+		fileHeader.getPlainText()[0] = (byte) (0x01 ^ fileHeader.getPlainText()[0]);
 		assertFalse( fileHeader.isValid());
-		fileHeader.header = new byte[10];
+		fileHeader.setPlainText( new byte[10] );
 		assertFalse( fileHeader.isValid());
-		fileHeader.header = null;
+		fileHeader.setPlainText( null );
 		assertFalse( fileHeader.isValid());
 	}
 
@@ -119,7 +119,7 @@ public class FileHeaderTest {
 	public void testToString() {
 		byte[] salt = new byte[128/8];
 		FileHeader fileHeader = new FileHeader( Type.ARGON2id, Version.V13, 32*1024, 7, 128, salt );
-		System.out.println( fileHeader.toString() );
+		//System.out.println( fileHeader.toString() );
 		assertTrue( fileHeader.isValid());
 		final String expected = "ARGON2id V13 32768 7 128 00000000000000000000000000000000";
 		assertTrue( fileHeader.toString().equals(expected));

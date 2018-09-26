@@ -313,7 +313,7 @@ public class Wilkins {
 		//System.out.printf("HEADER: (%d) %s\n", fileHeader.header.length, BaseEncoding.base16().lowerCase().encode(fileHeader.header));
 		//System.out.println( fileHeader.toString() );
 		System.out.printf("Write 0: %d\n", writer.getFilePointer());
-		writer.write( fileHeader.header );
+		writer.write( fileHeader.getPlainText() );
 		System.out.printf("Write 1: %d\n", writer.getFilePointer());
 		
 		// randomly permute the order of the files

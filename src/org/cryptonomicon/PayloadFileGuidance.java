@@ -45,14 +45,12 @@ import com.google.common.primitives.Longs;
  *  32/CRC32 of preceeding
  */
 
-class PayloadFileGuidance {
+class PayloadFileGuidance extends EncryptableHeader {
 	
-	private int SIZE = 32;
-	
-	private byte[] plainText = new byte[SIZE];
-	private byte[] cipherText = null;
+	private static int SIZE = 32;
 	
 	public PayloadFileGuidance(int maxBlocks, int nm, int modulus, long seed, int length ) {
+		super(SIZE);
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		try {
 			bos.write( Ints.toByteArray(maxBlocks) ); // 0 .. 3  4 bytes 
@@ -77,6 +75,7 @@ class PayloadFileGuidance {
 	}
 	
 	public PayloadFileGuidance(RandomAccessFile file) {
+		super(SIZE);
 		try {
 			file.read(plainText);
 			//System.out.println(BaseEncoding.base16().lowerCase().encode(guidance));
@@ -85,29 +84,6 @@ class PayloadFileGuidance {
 		}
 	}
 	
-	public boolean decode( Cipher cipher, SecretKey key, byte[] iv ) {
-		IvParameterSpec parameterSpec = new IvParameterSpec(iv);
-		try {
-			cipher.init(Cipher.DECRYPT_MODE, key, parameterSpec);
-			plainText = cipher.doFinal(cipherText);
-			return true;
-		} catch (InvalidKeyException | InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException e) {
-			e.printStackTrace();
-		}
-		return false;
-	}
-	
-	public boolean encode( Cipher cipher, SecretKey key, byte[] iv) {
-		IvParameterSpec parameterSpec = new IvParameterSpec(iv);
-		try {
-			cipher.init(Cipher.ENCRYPT_MODE, key, parameterSpec);
-			cipherText = cipher.doFinal(plainText);
-			return true;
-		} catch (InvalidKeyException | InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException e) {
-			e.printStackTrace();
-		}
-		return false;
-	}
 	
 	public boolean isValid() {
 		if (plainText == null || plainText.length != SIZE)
@@ -145,31 +121,4 @@ class PayloadFileGuidance {
 		return String.format("%d %d %d %d %d %b", getMaxBlocks(), getFileCount(), getFileOrdinal(), getSeed(), getLength(), isValid() );
 	}
 
-	/**
-	 * @return the plainText
-	 */
-	public byte[] getPlainText() {
-		return plainText;
-	}
-
-	/**
-	 * @param plainText the plainText to set
-	 */
-	public void setPlainText(byte[] plainText) {
-		this.plainText = plainText;
-	}
-
-	/**
-	 * @return the cipherText
-	 */
-	public byte[] getCipherText() {
-		return cipherText;
-	}
-
-	/**
-	 * @param cipherText the cipherText to set
-	 */
-	public void setCipherText(byte[] cipherText) {
-		this.cipherText = cipherText;
-	}
 }
