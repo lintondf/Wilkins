@@ -19,7 +19,7 @@ import org.apache.commons.cli.ParseException;
  */
 public class Main {
 	
-	private static final String HELP_PREAMBLE = "wilkins [OPTIONS]... output-file-path\n" +
+	protected static final String HELP_PREAMBLE = "wilkins [OPTIONS]... output-file-path\n" +
 	  "Wraps two or more input data files each AES encrypted using corresponding passphrases" +
 	  " together with a configurable set of random filler material in secure container.";
 
@@ -30,20 +30,26 @@ public class Main {
 		Options options = new Options();
 		options.addOption("fpw", "file-password", true, "[path-to-datafile passphrase] 1..n");
 		options.getOption("fpw").setArgs(Option.UNLIMITED_VALUES);
+		options.addOption("h", "help", true, "print these instructions");
+		options.addOption("", "argon-type", true, "ARGON type [i|d|id]");
+		
 	    CommandLineParser parser = new DefaultParser();
 	    try {
 	        // parse the command line arguments
 	        CommandLine line = parser.parse( options, args );
-	        if (args.length == 0) {
+	        if (args.length == 0 || line.hasOption("help")) {
 	        	// automatically generate the help statement
 	        	HelpFormatter formatter = new HelpFormatter();
 	        	formatter.printHelp( HELP_PREAMBLE, options );
 	        }
-	        if( line.hasOption( "fpw" ) ) {
+	        if ( line.hasOption( "fpw" ) ) {
 	            // initialise the member variable
 	            String[] values = line.getOptionValues("fpw");
 	            for (String value : values) 
 	            	System.out.println(value);
+	        }
+	        if (line.hasOption("argon-type")) {
+	        	System.out.println(line.getOptionValue("argon-type"));
 	        }
 	    } catch( ParseException exp ) {
 	        // oops, something went wrong
