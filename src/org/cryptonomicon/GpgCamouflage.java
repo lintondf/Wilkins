@@ -33,22 +33,26 @@ public class GpgCamouflage {
 
 		0000000    8c  0d  04  07  03  02  78  3f  e1  23  37  56  06  47  d5  d2
 		0000020    ff  00  12  57  22  01 
+		
 	 */
 	
-	public static final byte[] gpgHeader1 = BaseEncoding.base16().lowerCase().decode("8c0d04070302");
+	public static final int GPG_HEADER_SIZE = 22;
 	
-	private static final int gpgHeader2_Size = 7;
+	protected static final byte[] gpgHeaderPart1 = BaseEncoding.base16().lowerCase().decode("8c0d04070302");
+	private static final int gpgHeaderPart2_Size = 7;
+
+	private static final int SIZE_START = gpgHeaderPart1.length + 8 + 1 + 1 + 1;
 	
 	public static int getGpgHeaderSize() {
-		return gpgHeader1.length + 8 + 1 + gpgHeader2_Size;
+		return gpgHeaderPart1.length + 8 + 1 + gpgHeaderPart2_Size;
 	}
 	
 	protected byte[]  gpgHeader;
 	
-	public GpgCamouflage( int fileSize ) {
+	public GpgCamouflage( RandomAccessFile file, int fileSize ) {
 		byte[] size = Ints.toByteArray(fileSize);
 		ByteBuffer byteBuffer = ByteBuffer.allocate( getGpgHeaderSize() );
-		byteBuffer.put( gpgHeader1 );
+		byteBuffer.put( gpgHeaderPart1 );
 		long seed = BigInteger.probablePrime(8*8-1, new Random()).longValue(); // the mark of the beast
 		byteBuffer.putLong(seed);
 		byteBuffer.put( (byte) 0xd5 );
@@ -57,11 +61,18 @@ public class GpgCamouflage {
 		byteBuffer.put(size);
 		byteBuffer.put( (byte) 0x01 );
 		gpgHeader = byteBuffer.array();
+		try {
+			file.seek(0L);
+			file.write(gpgHeader);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public GpgCamouflage( RandomAccessFile file ) {
 		gpgHeader = new byte[getGpgHeaderSize()]; 
 		try {
+			file.seek(0L);
 			file.read(gpgHeader, 0, gpgHeader.length);
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -76,29 +87,52 @@ public class GpgCamouflage {
 	public boolean isValid() {
 		if (gpgHeader == null)
 			return false;
-		if (!Arrays.equals(gpgHeader1, Arrays.copyOf(gpgHeader, gpgHeader1.length))) 
+		if (!Arrays.equals(gpgHeaderPart1, Arrays.copyOf(gpgHeader, gpgHeaderPart1.length))) 
 			return false;
-		byte[] seedBytes = Arrays.copyOfRange(gpgHeader, gpgHeader1.length, gpgHeader1.length+8);
+		byte[] seedBytes = Arrays.copyOfRange(gpgHeader, gpgHeaderPart1.length, gpgHeaderPart1.length+8);
 		BigInteger seed = new BigInteger(seedBytes);
 		return (seed.isProbablePrime(10));
 	}
 	
 	public byte[] getSeed() {
-		return Arrays.copyOfRange(gpgHeader, gpgHeader1.length, gpgHeader1.length+8);
+		return Arrays.copyOfRange(gpgHeader, gpgHeaderPart1.length, gpgHeaderPart1.length+8);
 	}
 	
 	public int getSize() {
-		int start = gpgHeader1.length + 8 + 1 + 1 + 1;  // header, seed, d5, d2, ff
-		int end = start + 4;
-		return Ints.fromByteArray( Arrays.copyOfRange(gpgHeader,  start, end));
+		// header, seed, d5, d2, ff
+		int end = SIZE_START + 4;
+		return Ints.fromByteArray( Arrays.copyOfRange(gpgHeader,  SIZE_START, end));
+	}
+	
+	public void setSize( int size ) {
+		int end = SIZE_START + 4;
+		byte[] src = Ints.toByteArray(size);
+		System.arraycopy(src, 0, gpgHeader, SIZE_START, src.length);
+	}
+
+	public boolean update( RandomAccessFile file ) {
+		try {
+			file.seek(0L);
+			file.write(gpgHeader);
+			return true;
+		} catch (IOException e) {
+			e.printStackTrace();
+			return false;
+		}
 	}
 
 	/**
-	 * @param args
+	 * @return the gpgHeader
 	 */
-	public static void main(String[] args) {
-		GpgCamouflage gC = new GpgCamouflage( 1000 );
-		System.out.println( gC.isValid() + " " + gC.getSize() );
+	public byte[] getGpgHeader() {
+		return gpgHeader;
 	}
 
+	/**
+	 * @param gpgHeader the gpgHeader to set
+	 */
+	public void setGpgHeader(byte[] gpgHeader) {
+		this.gpgHeader = gpgHeader;
+	}
+	
 }
