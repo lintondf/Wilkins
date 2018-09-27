@@ -108,6 +108,11 @@ class FileHeader extends EncryptableHeader {
 		return Ints.fromByteArray( Arrays.copyOfRange(plainText, 10, 14) );
 	}
 	
+	public int getIterations() {
+		// TODO Auto-generated method stub
+		return 100000;
+	}
+
 	public byte[] getSalt() {
 		int hashLength = getKeySize()/8;
 		return Arrays.copyOfRange(plainText,  14, 14+hashLength);
@@ -122,4 +127,5 @@ class FileHeader extends EncryptableHeader {
 				BaseEncoding.base16().lowerCase().encode(getSalt()) );
 				
 	}
+
 }

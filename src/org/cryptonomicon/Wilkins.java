@@ -8,6 +8,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -22,10 +23,13 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import java.util.zip.InflaterOutputStream;
+
 import javax.crypto.Cipher;
 import javax.crypto.CipherOutputStream;
 import javax.crypto.SecretKey;
+import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import com.google.common.io.BaseEncoding;
@@ -165,7 +169,9 @@ public class Wilkins {
 			File file = new File(path);
 			if (!file.exists() && file.isFile() && file.length() > 0L)
 				return false;
-			byte[] key = fileHeader.getHasher().password(passPhrase.getBytes()).rawHash();
+			//byte[] key = fileHeader.getHasher().password(passPhrase.getBytes()).rawHash();
+			byte[] key = deriveKey(fileHeader.getHasher(), fileHeader.getKeySize(), fileHeader.getIterations(), passPhrase, fileHeader.getSalt() );
+
 			BlockedFile pair = new BlockedFile(file, key);
 			getLogger().info(String.format("adding %-16s %s %s %d", path, toString(key), passPhrase, pair.length ));
 			maxLength = Math.max(maxLength, pair.length);
@@ -214,9 +220,12 @@ public class Wilkins {
 		hashLength = keyLength/8;
 		
 		//System.out.printf("IV %s\n", toString(iv));
-		byte[] key = fileHeader.getHasher()
-				.password(passPhrase.getBytes()).rawHash();
-		//System.out.printf("Key, Pass = %s %s\n", toString(key), passPhrase );
+//		byte[] key = fileHeader.getHasher()
+//				.password(passPhrase.getBytes()).rawHash();
+//		//System.out.printf("Key, Pass = %s %s\n", toString(key), passPhrase );
+//		SecretKey secretKey = new SecretKeySpec(key, "AES");
+		
+		byte[] key = deriveKey(fileHeader.getHasher(), fileHeader.getKeySize(), fileHeader.getIterations(), passPhrase, fileHeader.getSalt() );
 		SecretKey secretKey = new SecretKeySpec(key, "AES");
 		
 		int fileIndex = 0;
@@ -566,6 +575,32 @@ public class Wilkins {
 		g.decode(ipmec.getCipher(), secretKey, iv);
 		System.out.println( toString( g.getPlainText()) );
 		System.out.println(g.toString());		
+	}
+	
+    static final String algorithm = "PBKDF2WithHmacSHA1";
+    static SecretKeyFactory factory = null;
+    
+	public static byte[] deriveKey( Hasher hasher, int derivedKeyLength, int iterations, String password, byte[] salt) {
+		if (factory == null) {
+			try {
+				factory = SecretKeyFactory.getInstance(algorithm);
+			} catch (NoSuchAlgorithmException e) {
+				e.printStackTrace();
+				return null;
+			}
+		}
+		try {
+	        // create cipher key
+	        final PBEKeySpec cipherSpec = new PBEKeySpec(password.toCharArray(), salt, iterations, derivedKeyLength);
+	        SecretKey cipherKey = factory.generateSecret(cipherSpec);
+	        cipherSpec.clearPassword();
+	        
+	        return hasher.password(cipherKey.getEncoded()).salt(salt).rawHash();
+		} catch (Exception x) {
+			x.printStackTrace();
+			return null;
+		}
+		
 	}
 	
 	public static void main( String[] args ) {
