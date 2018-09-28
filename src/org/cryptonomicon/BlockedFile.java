@@ -1,3 +1,6 @@
+/*
+ * 
+ */
 package org.cryptonomicon;
 
 import java.io.BufferedInputStream;
@@ -23,20 +26,50 @@ import javax.crypto.spec.SecretKeySpec;
 import com.kosprov.jargon2.api.Jargon2;
 import com.kosprov.jargon2.api.Jargon2.ByteArray;
 
-class BlockedFile {
+// TODO: Auto-generated Javadoc
+/**
+ * The Class BlockedFile is used to store payload and filler file contents
+ * organized as a BlockList.  Cryptographic keys for the content are stored
+ * and used.
+ */
+public class BlockedFile {
+	
+	/** The source file. Null if random content. */
 	public File file;
+	
+	/** The secret key. */
 	public SecretKey secretKey; 
+	
+	/** The length. */
 	public long length;
 
+	/**
+	 * Enumeration of file states.
+	 */
 	public enum State {
-		IDLE, RAW, ZIPPED, ENCRYPTED
+		 /** No Content. */
+		 IDLE, 
+		 /** Content as input. */
+		 RAW, 
+		 /** Content is deflated. */
+		 ZIPPED, 
+		 /** Content is deflated and encrypted. */
+		 ENCRYPTED
 	};
 
+	/** The content state. */
 	public State state;
+	
+	/** The list of blocks. */
 	public BlockList blocks;
 	
+	/** The cipher. */
 	protected static Cipher cipher = null;
 	
+	/**
+	 * Default constructor for a new blocked file.  Handles static initialization.
+	 * Use this() required in all public constructors.
+	 */
 	private BlockedFile() {
 		if (cipher == null)	try {
 			cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
@@ -46,6 +79,12 @@ class BlockedFile {
 	}
 
 
+	/**
+	 * Instantiates a new blocked file from file content.
+	 *
+	 * @param f the file to load
+	 * @param key the cryptographic key
+	 */
 	public BlockedFile(File f, ByteArray key) {
 		this();
 		file = f;
@@ -55,6 +94,12 @@ class BlockedFile {
 		state = State.IDLE;
 	}
 
+	/**
+	 * Instantiates a new blocked file with random content.
+	 *
+	 * @param key the cryptographic key
+	 * @param nBlocks the n blocks
+	 */
 	public BlockedFile(ByteArray key, int nBlocks) {
 		this();
 		file = null;
@@ -65,8 +110,11 @@ class BlockedFile {
 		state = State.RAW;
 	}
 	
-	/*
-	 * Create a one block test file with specified contents
+	/**
+	 * Instantiates a one block test file with specified contents
+	 *
+	 * @param contents the contents
+	 * @param key the cryptographic key
 	 */
 	protected BlockedFile( byte[] contents, ByteArray key ) {
 		this();
@@ -79,7 +127,9 @@ class BlockedFile {
 		state = State.RAW;
 	}
 
-	/** pad - pad final data block and add random blocks to file
+	/**
+	 *  pad final data block and add random blocks to file.
+	 *
 	 * @param count - number of random blocks to add
 	 */
 	public void pad(int count) {
@@ -87,6 +137,13 @@ class BlockedFile {
 		BlockList.pad(blocks, count);
 	}
 	
+	/**
+	 * Generates a chain of streams based the supplied input stream to encrypt and deflate the content
+	 *
+	 * @param is the base InputStream
+	 * @param iv the AES initial value
+	 * @return the resulting input stream
+	 */
 	public InputStream getInputStream(InputStream is, byte[] iv) {
 		try {
 			IvParameterSpec parameterSpec = new IvParameterSpec(iv);
@@ -101,6 +158,13 @@ class BlockedFile {
 		
 	}
 	
+	/**
+	 * Generates a chain of output streams ending with the suppled stream to decrypt and inflate the content.
+	 *
+	 * @param os the destination OutputStream
+	 * @param iv the AES initial value
+	 * @return the resulting output stream
+	 */
 	public OutputStream getOutputStream(OutputStream os, byte[] iv) {
 		if (state == State.RAW)
 			return os;
@@ -118,6 +182,12 @@ class BlockedFile {
 		}
 	}
 
+	/**
+	 * Deflate the BlockedFile content
+	 *
+	 * @param blockLimit the maximum number of blocks to generate; -1 for no limit
+	 * @return the number of blocks of content after deflation
+	 */
 	public int deflate(int blockLimit) { // -1 for unlimited
 		// Compressor with highest level of compression
 		Deflater compressor = new Deflater();
@@ -159,6 +229,11 @@ class BlockedFile {
 		}
 	}
 
+	/**
+	 * Inflate the content, outputting to the specified file
+	 *
+	 * @param output the output file
+	 */
 	public void inflate(File output) {
 		try {
 			FileOutputStream fos = new FileOutputStream(output);
@@ -185,6 +260,13 @@ class BlockedFile {
 		}
 	}
 	
+	/**
+	 * Encrypt/Decrypt subroutine
+	 *
+	 * @param mode ENCRYPT_MODE or DECRYPT_MODE
+	 * @param iv the AES initial value
+	 * @return the number of blocks of content after encryption/decryption
+	 */
 	protected int crypt( int mode, byte[] iv ) {
 		try {
 			IvParameterSpec parameterSpec = new IvParameterSpec(iv);
@@ -216,23 +298,32 @@ class BlockedFile {
 		}
 	}
 	
+	/**
+	 * Encrypt.
+	 *
+	 * @param iv the iv
+	 * @return the int
+	 */
 	public int encrypt( byte[] iv ) {
-//		System.out.println( file );
-//		System.out.println( Wilkins.toString(iv));
-//		System.out.println( Wilkins.toString(secretKey.getEncoded()));
-
 		crypt( Cipher.ENCRYPT_MODE, iv );
-//		System.out.println( blocks.getList().get(0).toString() );
 		length = blocks.length();
 		state = State.ENCRYPTED;
 		return blocks.size();
 	}
 
+	/**
+	 * Decrypt.
+	 *
+	 * @param iv the iv
+	 */
 	public void decrypt( byte[] iv ) {
 		crypt( Cipher.DECRYPT_MODE, iv );
 		state = State.ZIPPED;
 	}
 
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
 	public String toString() {
 		String path = "Filler";
 		if (file != null)
@@ -241,41 +332,41 @@ class BlockedFile {
 	}
 	
 	
-	public static void main( String[] args) {
-		File file = new File("data0.txt"); //"/Users/lintondf/Downloads/torrent-file-editor-0.3.12.dmg");
-		//BlockedFile blockedFile = new BlockedFile( new byte[16 ], 9915);
-		BlockedFile blockedFile = new BlockedFile(file, Jargon2.toByteArray(new byte[16]).finalizable());
-		blockedFile.deflate(-1);
-		byte[] iv = new byte[Wilkins.AES_IV_BYTES];
-		int blocks = blockedFile.encrypt( iv );
-		System.out.println(blocks);
-		File out = new File("test.dgz");
-		try {
-			FileOutputStream fos = new FileOutputStream( out );
-			for (Block block : blockedFile.blocks.getList()) {
-				fos.write( block.contents, 0, block.count);
-			}
-			fos.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		InflaterOutputStream ios = new InflaterOutputStream(bos);
-		try {
-			IvParameterSpec parameterSpec = new IvParameterSpec(iv);
-			cipher.init(Cipher.DECRYPT_MODE, blockedFile.secretKey, parameterSpec);
-			CipherOutputStream cos = new CipherOutputStream( ios, cipher );
-			for (Block block : blockedFile.blocks.getList()) {
-				cos.write( block.contents, 0, block.count);
-			}
-			String output = new String( bos.toByteArray() );
-			System.out.println(output);
-			cos.close();
-		} catch (Exception x) {
-			x.printStackTrace();
-		}
-
-		blockedFile.decrypt( iv );
-		blockedFile.inflate( new File("test.out"));
-	}
+//	public static void main( String[] args) {
+//		File file = new File("data0.txt"); //"/Users/lintondf/Downloads/torrent-file-editor-0.3.12.dmg");
+//		//BlockedFile blockedFile = new BlockedFile( new byte[16 ], 9915);
+//		BlockedFile blockedFile = new BlockedFile(file, Jargon2.toByteArray(new byte[16]).finalizable());
+//		blockedFile.deflate(-1);
+//		byte[] iv = new byte[Wilkins.AES_IV_BYTES];
+//		int blocks = blockedFile.encrypt( iv );
+//		System.out.println(blocks);
+//		File out = new File("test.dgz");
+//		try {
+//			FileOutputStream fos = new FileOutputStream( out );
+//			for (Block block : blockedFile.blocks.getList()) {
+//				fos.write( block.contents, 0, block.count);
+//			}
+//			fos.close();
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+//		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+//		InflaterOutputStream ios = new InflaterOutputStream(bos);
+//		try {
+//			IvParameterSpec parameterSpec = new IvParameterSpec(iv);
+//			cipher.init(Cipher.DECRYPT_MODE, blockedFile.secretKey, parameterSpec);
+//			CipherOutputStream cos = new CipherOutputStream( ios, cipher );
+//			for (Block block : blockedFile.blocks.getList()) {
+//				cos.write( block.contents, 0, block.count);
+//			}
+//			String output = new String( bos.toByteArray() );
+//			System.out.println(output);
+//			cos.close();
+//		} catch (Exception x) {
+//			x.printStackTrace();
+//		}
+//
+//		blockedFile.decrypt( iv );
+//		blockedFile.inflate( new File("test.out"));
+//	}
 }

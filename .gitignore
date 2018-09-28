@@ -5,6 +5,7 @@ hello.txt.gpg
 output.gpg
 test.bin
 test_read.out
-wilkins.log
+wilkins.log*
 output.ipmec
+doc/**
 target/**
