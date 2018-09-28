@@ -33,6 +33,8 @@ import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import com.google.common.io.BaseEncoding;
+import com.kosprov.jargon2.api.Jargon2;
+import com.kosprov.jargon2.api.Jargon2.ByteArray;
 import com.kosprov.jargon2.api.Jargon2.Hasher;
 import com.kosprov.jargon2.api.Jargon2.Type;
 import com.kosprov.jargon2.api.Jargon2.Verifier;
@@ -164,16 +166,18 @@ public class Wilkins {
 		this.cipher = cipher;
 	}
 
-	public boolean addDataFile(String path, FileHeader fileHeader, String passPhrase) {
+	public boolean addDataFile(String path, FileHeader fileHeader, char[] passPhrase) {
 		try {
 			File file = new File(path);
 			if (!file.exists() && file.isFile() && file.length() > 0L)
 				return false;
 			//byte[] key = fileHeader.getHasher().password(passPhrase.getBytes()).rawHash();
-			byte[] key = deriveKey(fileHeader.getHasher(), fileHeader.getKeySize(), fileHeader.getIterations(), passPhrase, fileHeader.getSalt() );
+			ByteArray key = Jargon2.toByteArray(
+					deriveKey(fileHeader.getHasher(), fileHeader.getKeySize(), fileHeader.getIterations(), passPhrase, fileHeader.getSalt() )
+					).finalizable().clearSource();
 
 			BlockedFile pair = new BlockedFile(file, key);
-			getLogger().info(String.format("adding %-16s %s %s %d", path, toString(key), passPhrase, pair.length ));
+			getLogger().info(String.format("adding %-16s %s %s %d", path, toString(key.getBytes()), passPhrase, pair.length ));
 			maxLength = Math.max(maxLength, pair.length);
 			dataFiles.add(pair);
 			return true;
@@ -189,7 +193,7 @@ public class Wilkins {
 				return false;
 			byte[] key = new byte[hashLength];
 			secureRandom.nextBytes(key);
-			BlockedFile pair = new BlockedFile(file, key);
+			BlockedFile pair = new BlockedFile(file, Jargon2.toByteArray(key).finalizable().clearSource());
 			fillerFiles.add(pair);
 			fillerCount++;
 			return true;
@@ -202,7 +206,7 @@ public class Wilkins {
 		fillerCount = m;
 	}
 	
-	public boolean read( RandomAccessFile file, OutputStream os, String passPhrase ) throws IOException {
+	public boolean read( RandomAccessFile file, OutputStream os, char[] passPhrase ) throws IOException {
 		InflaterOutputStream ios = new InflaterOutputStream( os );
 		
 		FileHeader fileHeader = new FileHeader(file);
@@ -297,7 +301,7 @@ public class Wilkins {
 			for (int i = fillerFiles.size(); i < fillerCount; i++) {
 				byte[] key = new byte[hashLength];
 				secureRandom.nextBytes(key);
-				BlockedFile file = new BlockedFile( key, maxBlocks );
+				BlockedFile file = new BlockedFile( Jargon2.toByteArray(key).finalizable().clearSource(), maxBlocks );
 				file.deflate(maxBlocks);
 				file.encrypt(fileHeader.getIV(fileOrdinal++));
 				fillerFiles.add(file);
@@ -513,8 +517,8 @@ public class Wilkins {
 
 		FileHeader fileHeader = new FileHeader(ipmec.type, ipmec.version, ipmec.memoryCost, ipmec.timeCost, ipmec.keyLength, iv );
 
-		ipmec.addDataFile("data1.txt", fileHeader, "key1");
-		ipmec.addDataFile("data2.txt", fileHeader, "key2");
+		ipmec.addDataFile("data1.txt", fileHeader, "key1".toCharArray());
+		ipmec.addDataFile("data2.txt", fileHeader, "key2".toCharArray());
 		ipmec.addFillerFile("filler1.txt");
 		ipmec.setRandomFillerCount(3);
 		
@@ -554,7 +558,7 @@ public class Wilkins {
 		try {
 			File in = new File("output.gpg");
 			RandomAccessFile file = new RandomAccessFile( in, "r");
-			ipmec.read( file, new FileOutputStream(new File("test_read.out")), "key1");
+			ipmec.read( file, new FileOutputStream(new File("test_read.out")), "key1".toCharArray());
 			ipmec.report();
 		} catch (Exception x) {
 			
@@ -580,7 +584,7 @@ public class Wilkins {
     static final String algorithm = "PBKDF2WithHmacSHA1";
     static SecretKeyFactory factory = null;
     
-	public static byte[] deriveKey( Hasher hasher, int derivedKeyLength, int iterations, String password, byte[] salt) {
+	public static byte[] deriveKey( Hasher hasher, int derivedKeyLength, int iterations, char[] password, byte[] salt) {
 		if (factory == null) {
 			try {
 				factory = SecretKeyFactory.getInstance(algorithm);
@@ -589,9 +593,9 @@ public class Wilkins {
 				return null;
 			}
 		}
-		try {
-	        // create cipher key
-	        final PBEKeySpec cipherSpec = new PBEKeySpec(password.toCharArray(), salt, iterations, derivedKeyLength);
+		try {  // create cipher key
+	        final PBEKeySpec cipherSpec = new PBEKeySpec(password, salt, iterations, derivedKeyLength);
+			Jargon2.toByteArray(password).clearSource().finalizable();
 	        SecretKey cipherKey = factory.generateSecret(cipherSpec);
 	        cipherSpec.clearPassword();
 	        

@@ -12,12 +12,16 @@ import java.util.zip.Deflater;
 import java.util.zip.DeflaterInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterOutputStream;
+
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
 import javax.crypto.CipherOutputStream;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+
+import com.kosprov.jargon2.api.Jargon2;
+import com.kosprov.jargon2.api.Jargon2.ByteArray;
 
 class BlockedFile {
 	public File file;
@@ -33,8 +37,8 @@ class BlockedFile {
 	
 	protected static Cipher cipher = null;
 	
-	static {
-		try {
+	private BlockedFile() {
+		if (cipher == null)	try {
 			cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
 		} catch (Exception x) {
 			x.printStackTrace();
@@ -42,17 +46,19 @@ class BlockedFile {
 	}
 
 
-	public BlockedFile(File f, byte[] key) {
+	public BlockedFile(File f, ByteArray key) {
+		this();
 		file = f;
-		secretKey = new SecretKeySpec(key, "AES");
+		secretKey = new SecretKeySpec(key.getBytes(), "AES");
 		length = f.length();
 		blocks = null;
 		state = State.IDLE;
 	}
 
-	public BlockedFile(byte[] key, int nBlocks) {
+	public BlockedFile(ByteArray key, int nBlocks) {
+		this();
 		file = null;
-		secretKey = new SecretKeySpec(key, "AES");
+		secretKey = new SecretKeySpec(key.getBytes(), "AES");
 		length = nBlocks * Block.BLOCK_SIZE;
 		blocks = new BlockList();
 		BlockList.pad(blocks, nBlocks);
@@ -62,9 +68,10 @@ class BlockedFile {
 	/*
 	 * Create a one block test file with specified contents
 	 */
-	protected BlockedFile( byte[] contents, byte[] key ) {
+	protected BlockedFile( byte[] contents, ByteArray key ) {
+		this();
 		file = null;
-		secretKey = new SecretKeySpec(key, "AES");
+		secretKey = new SecretKeySpec(key.getBytes(), "AES");
 		length = contents.length;
 		blocks = new BlockList();
 		Block block = new Block(contents);
@@ -72,6 +79,9 @@ class BlockedFile {
 		state = State.RAW;
 	}
 
+	/** pad - pad final data block and add random blocks to file
+	 * @param count - number of random blocks to add
+	 */
 	public void pad(int count) {
 		blocks.getList().get(blocks.getList().size() - 1).pad();
 		BlockList.pad(blocks, count);
@@ -234,7 +244,7 @@ class BlockedFile {
 	public static void main( String[] args) {
 		File file = new File("data0.txt"); //"/Users/lintondf/Downloads/torrent-file-editor-0.3.12.dmg");
 		//BlockedFile blockedFile = new BlockedFile( new byte[16 ], 9915);
-		BlockedFile blockedFile = new BlockedFile(file, new byte[16 ]);
+		BlockedFile blockedFile = new BlockedFile(file, Jargon2.toByteArray(new byte[16]).finalizable());
 		blockedFile.deflate(-1);
 		byte[] iv = new byte[Wilkins.AES_IV_BYTES];
 		int blocks = blockedFile.encrypt( iv );

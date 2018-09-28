@@ -117,44 +117,44 @@ public class ShuffledInterlaceMixer implements Mixer {
 	}
 	
 
-	public static void main( String[] args ) {
-		ShuffledInterlaceMixer mixer = new ShuffledInterlaceMixer();
-		Random random = new Random();
-		random.setSeed(0L);
-		int maxBlocks = 1;
-		byte[] iv = new byte[16];
-		ArrayList<BlockedFile> allFiles = new ArrayList<>();
-		ArrayList<byte[]> contentsList = new ArrayList<>();
-		contentsList.add(new byte[] {1, 1, 1, 1, 1});
-		contentsList.add(new byte[] {2, 2, 2, 2, 2});
-		for (byte[] contents : contentsList) {
-			allFiles.add( new BlockedFile(contents , new byte[16] ));
-		}
-		for (BlockedFile file : allFiles) {
-			file.deflate(-1);
-			file.encrypt(iv);
-		}
-		try {
-			RandomAccessFile raf = new RandomAccessFile("test.bin", "rw");
-			mixer.writeBlocks( random, maxBlocks, allFiles, raf );
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		
-		for (int i = 0; i < contentsList.size(); i++) {
-			try {
-				PayloadFileGuidance fileGuidance = new PayloadFileGuidance(maxBlocks, allFiles.size(), i, 0L, (int) allFiles.get(i).length );
-				random.setSeed(0L);
-				RandomAccessFile raf = new RandomAccessFile("test.bin", "rw");
-				ByteArrayOutputStream bos = new ByteArrayOutputStream();
-				OutputStream cos = allFiles.get(i).getOutputStream(bos, iv);
-				mixer.readBlocks( fileGuidance, random, raf, cos );
-				//System.out.println( i + ": " + Wilkins.toString( bos.toByteArray() ));
-				if (! Arrays.equals(bos.toByteArray(), contentsList.get(i)))
-					System.err.println("No Match");
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-	}
+//	public static void main( String[] args ) {
+//		ShuffledInterlaceMixer mixer = new ShuffledInterlaceMixer();
+//		Random random = new Random();
+//		random.setSeed(0L);
+//		int maxBlocks = 1;
+//		byte[] iv = new byte[16];
+//		ArrayList<BlockedFile> allFiles = new ArrayList<>();
+//		ArrayList<byte[]> contentsList = new ArrayList<>();
+//		contentsList.add(new byte[] {1, 1, 1, 1, 1});
+//		contentsList.add(new byte[] {2, 2, 2, 2, 2});
+//		for (byte[] contents : contentsList) {
+//			allFiles.add( new BlockedFile(contents , new byte[16] ));
+//		}
+//		for (BlockedFile file : allFiles) {
+//			file.deflate(-1);
+//			file.encrypt(iv);
+//		}
+//		try {
+//			RandomAccessFile raf = new RandomAccessFile("test.bin", "rw");
+//			mixer.writeBlocks( random, maxBlocks, allFiles, raf );
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+//		
+//		for (int i = 0; i < contentsList.size(); i++) {
+//			try {
+//				PayloadFileGuidance fileGuidance = new PayloadFileGuidance(maxBlocks, allFiles.size(), i, 0L, (int) allFiles.get(i).length );
+//				random.setSeed(0L);
+//				RandomAccessFile raf = new RandomAccessFile("test.bin", "rw");
+//				ByteArrayOutputStream bos = new ByteArrayOutputStream();
+//				OutputStream cos = allFiles.get(i).getOutputStream(bos, iv);
+//				mixer.readBlocks( fileGuidance, random, raf, cos );
+//				//System.out.println( i + ": " + Wilkins.toString( bos.toByteArray() ));
+//				if (! Arrays.equals(bos.toByteArray(), contentsList.get(i)))
+//					System.err.println("No Match");
+//			} catch (IOException e) {
+//				e.printStackTrace();
+//			}
+//		}
+//	}
 }

@@ -15,7 +15,11 @@ import java.util.Random;
 
 import org.apache.commons.io.IOUtils;
 import org.junit.Test;
+
 import com.google.common.io.BaseEncoding;
+import com.kosprov.jargon2.api.Jargon2;
+import com.kosprov.jargon2.api.Jargon2.ByteArray;
+import com.kosprov.jargon2.internal.ByteArrayImpl;
 
 public class ShuffledInterlaceMixerTest {
 	
@@ -107,7 +111,7 @@ public class ShuffledInterlaceMixerTest {
 		random.setSeed(0L);
 		int maxBlocks = 1;
 		byte[] iv = new byte[16];
-		byte[] key = new byte[16];
+		ByteArray key = Jargon2.toByteArray(new byte[16]).finalizable();
 		
 		BlockedFile dummy = new BlockedFile(key, 3);
 		dummy.state = BlockedFile.State.RAW;
@@ -142,7 +146,7 @@ public class ShuffledInterlaceMixerTest {
 		random.setSeed(0L);
 		int maxBlocks = 1;
 		byte[] iv = new byte[16];
-		byte[] key = new byte[16];
+		ByteArray key = Jargon2.toByteArray( new byte[16] ).finalizable();
 		ArrayList<BlockedFile> allFiles = new ArrayList<>();
 		ArrayList<byte[]> contentsList = new ArrayList<>();
 		for (String str : contentStrings) {
