@@ -3,6 +3,8 @@
  */
 package org.cryptonomicon;
 
+import java.io.IOException;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -27,6 +29,7 @@ public class Main {
 	 * @param args
 	 */
 	public static void main(String[] args) {
+//		System.out.println( Execute.run("/usr/local/bin/gpg --help") );
 		Options options = new Options();
 		options.addOption("fpw", "file-password", true, "[path-to-datafile passphrase] 1..n");
 		options.getOption("fpw").setArgs(Option.UNLIMITED_VALUES);
