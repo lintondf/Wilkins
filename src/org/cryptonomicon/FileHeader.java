@@ -7,6 +7,8 @@ import java.util.Arrays;
 import java.util.zip.CRC32;
 import java.util.zip.Checksum;
 
+import org.cryptonomicon.Configuration.KeyDerivationParameters;
+
 import com.google.common.io.BaseEncoding;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
@@ -42,6 +44,30 @@ class FileHeader extends EncryptableHeader {
 			bos.write( Ints.toByteArray( timeCost ) );       // 6
 			bos.write( Ints.toByteArray( keySize ) );       // 10
 			bos.write( Arrays.copyOf(salt,  keySize/8 ) );           // 14 .. 14-1+keySize/8
+			byte[] filler = new byte[SIZE - bos.size() - CRC_SIZE];       
+			Wilkins.secureRandom.nextBytes(filler);
+			bos.write( filler );
+			plainText = bos.toByteArray();             
+			
+			Checksum checksum = new CRC32();
+			checksum.update( plainText, 0, plainText.length );
+			byte[] crc = Longs.toByteArray( checksum.getValue() );
+			bos.write(crc, 4, 4 );                    
+			plainText = bos.toByteArray();
+		} catch (IOException e) {
+			e.printStackTrace();
+			plainText = null;
+		}
+		
+	}
+	
+	public FileHeader( KeyDerivationParameters parameters, byte[] salt) {
+		super(SIZE);
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		try {
+			parameters.write(bos);
+			bos.write( Arrays.copyOf(salt,  parameters.getKeySize()/8 ) ); 
+			System.out.println( bos.size() );
 			byte[] filler = new byte[SIZE - bos.size() - CRC_SIZE];       
 			Wilkins.secureRandom.nextBytes(filler);
 			bos.write( filler );

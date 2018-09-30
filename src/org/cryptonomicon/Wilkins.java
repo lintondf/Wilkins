@@ -33,6 +33,7 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.cryptonomicon.Configuration.KeyDerivationParameters.ArgonParameters;
 import org.mindrot.BCrypt;
 
 import com.google.common.io.BaseEncoding;
@@ -78,12 +79,8 @@ public class Wilkins {
 	
 	public static final int AES_IV_BYTES = 128/8;
 
-	private Type type = Type.ARGON2id;
-	private Version version = Version.V13;
-	private int memoryCost = 16*1024;
-	private int timeCost = 32; // 10;
-	private int parallelism = 2;
 	protected int keyLength = 256;
+	
 	protected int hashLength = keyLength / 8;
 	private Cipher cipher;
 	
@@ -100,10 +97,16 @@ public class Wilkins {
 	}
 
 	protected Mixer mixer = new ShuffledInterlaceMixer();
+	
+	protected Configuration.KeyDerivationParameters parameters = Configuration.KeyDerivationParameters.getDefaults();
 
-	protected Hasher defaultHasher =  com.kosprov.jargon2.api.Jargon2.jargon2Hasher().type(type).version(version)
-			.memoryCost(memoryCost).timeCost(timeCost).parallelism(parallelism)
-			.hashLength(hashLength);
+	protected Hasher defaultHasher =  com.kosprov.jargon2.api.Jargon2.jargon2Hasher()
+			.type(parameters.getArgonParameters().getType())
+			.version(parameters.getArgonParameters().getVersion())
+			.memoryCost(parameters.getArgonParameters().getMemoryCost())
+			.timeCost(parameters.getArgonParameters().getTimeCost())
+			.parallelism(parameters.getArgonParameters().getParallelism())
+			.hashLength(parameters.getKeySize()/8);
 	
 	
 	
@@ -163,7 +166,6 @@ public class Wilkins {
 			
 	public Wilkins() {
 		initializeLogging();
-		getLogger().info( type.toString() + " " + version.toString() );
 		try {
 			setCipher(Cipher.getInstance("AES/CBC/NoPadding"));
 		} catch (Exception e) {
@@ -239,10 +241,12 @@ public class Wilkins {
 		}
 		System.out.printf("Read 0: %d\n", file.getFilePointer());
 		System.out.println(fileHeader.toString() );
-		type = fileHeader.getType();
-		version = fileHeader.getVersion();
-		memoryCost = fileHeader.getMemoryCost();
-		timeCost = fileHeader.getTimeCost();
+		ArgonParameters argonParameters = new ArgonParameters( fileHeader.getType(),
+			fileHeader.getVersion(),
+			fileHeader.getMemoryCost(),
+			fileHeader.getTimeCost(),
+			2 );
+		parameters.setArgonParameters(argonParameters);
 		
 		keyLength = fileHeader.getKeySize();
 		hashLength = keyLength/8;
@@ -539,7 +543,9 @@ public class Wilkins {
 		byte[] iv = new byte[Wilkins.AES_IV_BYTES];
 		secureRandom.nextBytes(iv);
 
-		FileHeader fileHeader = new FileHeader(ipmec.type, ipmec.version, ipmec.memoryCost, ipmec.timeCost, ipmec.keyLength, iv );
+		// TODO FileHeader saves/loads full KeyDerivationParameter set
+		ArgonParameters ap = ArgonParameters.getDefaults();
+		FileHeader fileHeader = new FileHeader(ap.getType(), ap.getVersion(), ap.getMemoryCost(), ap.getTimeCost(), ipmec.keyLength, iv );
 
 		ipmec.addDataFile("data1.txt", fileHeader, "key1".toCharArray());
 		ipmec.addDataFile("data2.txt", fileHeader, "key2".toCharArray());
@@ -608,7 +614,84 @@ public class Wilkins {
     static final String algorithm = "PBKDF2WithHmacSHA1";
     static SecretKeyFactory factory = null;
     
-	public static byte[] deriveKey( Hasher hasher, int derivedKeyLength, char[] password, byte[] salt) {
+    protected static abstract class DerivationStep {
+    	
+    	protected int derivedKeyLength;
+    	
+    	public DerivationStep( int derivedKeyLength ) {
+    		this.derivedKeyLength = derivedKeyLength;
+    	}
+    	
+    	public abstract ByteArray derive( ByteArray password, byte[] salt ) throws GeneralSecurityException;
+    }
+    
+    protected static class ArgonDerivationStep extends DerivationStep {
+    	
+    	protected Hasher hasher;
+    	
+    	public ArgonDerivationStep( Hasher hasher, int derivedKeyLength) {
+    		super(derivedKeyLength);
+    		this.hasher = hasher;
+    	}
+
+		@Override
+		public ByteArray derive(ByteArray password, byte[] salt) {
+			return Jargon2.toByteArray( hasher.password(password).salt(salt).rawHash() );
+		}
+    }
+    
+    protected static class BCryptDerivationStep extends DerivationStep {
+
+    	protected BCrypt bCrypt = new BCrypt();
+    	protected int rounds;
+    	
+		public BCryptDerivationStep(int derivedKeyLength, int rounds ) {
+			super(derivedKeyLength);
+			this.rounds = rounds;
+		}
+
+		@Override
+		public ByteArray derive(ByteArray password, byte[] salt) {
+			return Jargon2.toByteArray( bCrypt.crypt_raw(password.getBytes(), salt, rounds, BCrypt.getMagicNumbers() ) );
+		}
+    }
+    
+    protected static class SCryptDerivationStep extends DerivationStep {
+    	protected int N = 16*1024;
+    	protected int r = 8;
+    	protected int p = 2;
+
+		public SCryptDerivationStep(int derivedKeyLength, int N, int r, int p ) {
+			super(derivedKeyLength);
+			this.N = N;
+			this.r = r;
+			this.p = p;
+		}
+
+		@Override
+		public ByteArray derive(ByteArray password, byte[] salt) throws GeneralSecurityException {
+			return Jargon2.toByteArray( SCrypt.scryptJ(password.getBytes(), salt, N, r, p, derivedKeyLength/8) );
+		}
+    }
+    
+    protected ArrayList<DerivationStep> derivationSteps = new ArrayList<>();
+    
+	public byte[] deriveKey( Hasher hasher, int derivedKeyLength, char[] password, byte[] salt) {
+		derivationSteps.clear();
+		ArgonDerivationStep argon = new ArgonDerivationStep(hasher, derivedKeyLength);
+		derivationSteps.add(argon);
+		
+		ByteArray value  = Jargon2.toByteArray( password );
+		for (DerivationStep step : derivationSteps) {
+			try {
+				value = step.derive(value, salt);
+			} catch (GeneralSecurityException e) {
+				e.printStackTrace();
+				return null;
+			}
+		}
+		return value.getBytes();
+		
 		//TODO: by 'color'
 		/*
 		 * Black - BCrypt' only
@@ -627,7 +710,7 @@ public class Wilkins {
 //				return null;
 //			}
 //		}
-		if (false) {
+//		if (false) {
 //			SecureRandom random = new SecureRandom();
 //			String password = "X$f314159aE";
 //			byte[] salt = new byte[16];
@@ -658,20 +741,20 @@ public class Wilkins {
 //				//System.out.printf("Argon2 %10.6f %s\n", 1e-9*(double)(System.nanoTime()-start), Wilkins.toString(key));
 //				System.out.printf("TOTAL  %10.6f\n", 1e-9*(double)(System.nanoTime()-overall));
 //				}
-		}
- 		try {  // create cipher key
-			ByteArray passwordBA = Jargon2.toByteArray(password).finalizable().clearSource();
-			return hasher.password(passwordBA).salt(salt).rawHash();
-//	        final PBEKeySpec cipherSpec = new PBEKeySpec(password, salt, iterations, derivedKeyLength);
-//			Jargon2.toByteArray(password).clearSource().finalizable();
-//	        SecretKey cipherKey = factory.generateSecret(cipherSpec);
-//	        cipherSpec.clearPassword();
-//	        
-//	        return hasher.password(cipherKey.getEncoded()).salt(salt).rawHash();
-		} catch (Exception x) {
-			x.printStackTrace();
-			return null;
-		}
+//		}
+// 		try {  // create cipher key
+//			ByteArray passwordBA = Jargon2.toByteArray(password).finalizable().clearSource();
+//			return hasher.password(passwordBA).salt(salt).rawHash();
+////	        final PBEKeySpec cipherSpec = new PBEKeySpec(password, salt, iterations, derivedKeyLength);
+////			Jargon2.toByteArray(password).clearSource().finalizable();
+////	        SecretKey cipherKey = factory.generateSecret(cipherSpec);
+////	        cipherSpec.clearPassword();
+////	        
+////	        return hasher.password(cipherKey.getEncoded()).salt(salt).rawHash();
+//		} catch (Exception x) {
+//			x.printStackTrace();
+//			return null;
+//		}
 		
 	}
 	

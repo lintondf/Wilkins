@@ -35,6 +35,7 @@ public class Main {
 		options.getOption("fpw").setArgs(Option.UNLIMITED_VALUES);
 		options.addOption("h", "help", true, "print these instructions");
 		options.addOption("", "argon-type", true, "ARGON type [i|d|id]");
+		options.addOption("c", "key-derivation-color", true, "method used to convert passphrases to keys");
 		
 	    CommandLineParser parser = new DefaultParser();
 	    try {
