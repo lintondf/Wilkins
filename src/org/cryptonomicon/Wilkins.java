@@ -8,6 +8,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.text.SimpleDateFormat;
@@ -32,6 +33,8 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.mindrot.BCrypt;
+
 import com.google.common.io.BaseEncoding;
 import com.kosprov.jargon2.api.Jargon2;
 import com.kosprov.jargon2.api.Jargon2.ByteArray;
@@ -39,6 +42,8 @@ import com.kosprov.jargon2.api.Jargon2.Hasher;
 import com.kosprov.jargon2.api.Jargon2.Type;
 import com.kosprov.jargon2.api.Jargon2.Verifier;
 import com.kosprov.jargon2.api.Jargon2.Version;
+import com.kosprov.jargon2.internal.ByteArrayImpl;
+import com.lambdaworks.crypto.SCrypt;
 
 /**
  * Wilkins - Haystack Cryptographic Container 
@@ -75,9 +80,9 @@ public class Wilkins {
 
 	private Type type = Type.ARGON2id;
 	private Version version = Version.V13;
-	private int memoryCost = 65536;
-	private int timeCost = 10;
-	private int parallelism = 10;
+	private int memoryCost = 16*1024;
+	private int timeCost = 32; // 10;
+	private int parallelism = 2;
 	protected int keyLength = 256;
 	protected int hashLength = keyLength / 8;
 	private Cipher cipher;
@@ -100,6 +105,15 @@ public class Wilkins {
 			.memoryCost(memoryCost).timeCost(timeCost).parallelism(parallelism)
 			.hashLength(hashLength);
 	
+	
+	
+	/**
+	 * @return the defaultHasher
+	 */
+	public Hasher getDefaultHasher() {
+		return defaultHasher;
+	}
+
 	protected static class ReportLogFormatter extends Formatter {
         @Override
         public String format(LogRecord record) {
@@ -183,7 +197,7 @@ public class Wilkins {
 				return false;
 			//byte[] key = fileHeader.getHasher().password(passPhrase.getBytes()).rawHash();
 			ByteArray key = Jargon2.toByteArray(
-					deriveKey(fileHeader.getHasher(), fileHeader.getKeySize(), fileHeader.getIterations(), passPhrase, fileHeader.getSalt() )
+					deriveKey(fileHeader.getHasher(), fileHeader.getKeySize(), passPhrase, fileHeader.getSalt() )
 					).finalizable().clearSource();
 
 			BlockedFile pair = new BlockedFile(file, key);
@@ -239,7 +253,7 @@ public class Wilkins {
 //		//System.out.printf("Key, Pass = %s %s\n", toString(key), passPhrase );
 //		SecretKey secretKey = new SecretKeySpec(key, "AES");
 		
-		byte[] key = deriveKey(fileHeader.getHasher(), fileHeader.getKeySize(), fileHeader.getIterations(), passPhrase, fileHeader.getSalt() );
+		byte[] key = deriveKey(fileHeader.getHasher(), fileHeader.getKeySize(), passPhrase, fileHeader.getSalt() );
 		SecretKey secretKey = new SecretKeySpec(key, "AES");
 		
 		int fileIndex = 0;
@@ -594,22 +608,66 @@ public class Wilkins {
     static final String algorithm = "PBKDF2WithHmacSHA1";
     static SecretKeyFactory factory = null;
     
-	public static byte[] deriveKey( Hasher hasher, int derivedKeyLength, int iterations, char[] password, byte[] salt) {
-		if (factory == null) {
-			try {
-				factory = SecretKeyFactory.getInstance(algorithm);
-			} catch (NoSuchAlgorithmException e) {
-				e.printStackTrace();
-				return null;
-			}
+	public static byte[] deriveKey( Hasher hasher, int derivedKeyLength, char[] password, byte[] salt) {
+		//TODO: by 'color'
+		/*
+		 * Black - BCrypt' only
+		 * Red - SCrypt only
+		 * Orange - Argon2 only
+		 * Yellow - Scrypt+BCrypt'
+		 * Green - Argon2+Bcrypt
+		 * Blue - Argon2+Scrypt
+		 * Violet - Argon2+Scrypt+Bcrypt
+		 */
+//		if (factory == null) {
+//			try {
+//				factory = SecretKeyFactory.getInstance(algorithm);
+//			} catch (NoSuchAlgorithmException e) {
+//				e.printStackTrace();
+//				return null;
+//			}
+//		}
+		if (false) {
+//			SecureRandom random = new SecureRandom();
+//			String password = "X$f314159aE";
+//			byte[] salt = new byte[16];
+//			random.nextBytes(salt);
+//			//int iterations = 20000;
+//			int derivedKeyLength = 256;
+//
+//			for (int i = 0; i < 10; i++ ) {
+//				long overall = System.nanoTime();
+//				long start = overall;
+//				BCrypt bCrypt = new BCrypt();
+//				byte[] bkey = bCrypt.crypt_raw(password.getBytes(), salt, 12, BCrypt.getMagicNumbers() );
+//				//System.out.printf("BCrypt %10.6f %s\n", 1e-9*(double)(System.nanoTime()-start), Wilkins.toString(bkey));
+//
+//				int N = 16*1024;
+//				int r = 8;
+//				int p = 2;
+//				start = System.nanoTime();
+//				try {
+//					byte[] skey = SCrypt.scryptJ(password.getBytes(), salt, N, r, p, derivedKeyLength/8);
+//					//System.out.printf("SCrypt %10.6f %s\n", 1e-9*(double)(System.nanoTime()-start), Wilkins.toString(skey));
+//				} catch (GeneralSecurityException e) {
+//					e.printStackTrace();
+//				}
+//				Wilkins wilkins = new Wilkins();
+//				start = System.nanoTime();
+//				byte[] key = Wilkins.deriveKey(wilkins.getDefaultHasher(), derivedKeyLength, password.toCharArray(), salt);
+//				//System.out.printf("Argon2 %10.6f %s\n", 1e-9*(double)(System.nanoTime()-start), Wilkins.toString(key));
+//				System.out.printf("TOTAL  %10.6f\n", 1e-9*(double)(System.nanoTime()-overall));
+//				}
 		}
-		try {  // create cipher key
-	        final PBEKeySpec cipherSpec = new PBEKeySpec(password, salt, iterations, derivedKeyLength);
-			Jargon2.toByteArray(password).clearSource().finalizable();
-	        SecretKey cipherKey = factory.generateSecret(cipherSpec);
-	        cipherSpec.clearPassword();
-	        
-	        return hasher.password(cipherKey.getEncoded()).salt(salt).rawHash();
+ 		try {  // create cipher key
+			ByteArray passwordBA = Jargon2.toByteArray(password).finalizable().clearSource();
+			return hasher.password(passwordBA).salt(salt).rawHash();
+//	        final PBEKeySpec cipherSpec = new PBEKeySpec(password, salt, iterations, derivedKeyLength);
+//			Jargon2.toByteArray(password).clearSource().finalizable();
+//	        SecretKey cipherKey = factory.generateSecret(cipherSpec);
+//	        cipherSpec.clearPassword();
+//	        
+//	        return hasher.password(cipherKey.getEncoded()).salt(salt).rawHash();
 		} catch (Exception x) {
 			x.printStackTrace();
 			return null;

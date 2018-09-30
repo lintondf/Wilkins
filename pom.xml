@@ -66,5 +66,15 @@
 			<version>5.3.1</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>me.gosimple</groupId>
+			<artifactId>nbvcxz</artifactId>
+			<version>1.4.2</version>
+		</dependency>
+		<dependency>
+			<groupId>com.lambdaworks</groupId>
+			<artifactId>scrypt</artifactId>
+			<version>1.4.0</version>
+		</dependency>
 	</dependencies>
 </project>
