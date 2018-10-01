@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.Random;
 
 import org.apache.commons.io.IOUtils;
+import org.cryptonomicon.mixers.ShuffledInterlaceMixer;
 import org.junit.Test;
 
 import com.google.common.io.BaseEncoding;

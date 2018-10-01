@@ -7,7 +7,7 @@ import java.util.Arrays;
 import java.util.zip.CRC32;
 import java.util.zip.Checksum;
 
-import org.cryptonomicon.Configuration.KeyDerivationParameters;
+import org.cryptonomicon.configuration.KeyDerivationParameters;
 
 import com.google.common.io.BaseEncoding;
 import com.google.common.primitives.Ints;
@@ -29,7 +29,8 @@ import com.kosprov.jargon2.api.Jargon2.Version;
  * [n+m]*L0 contents bytes in 1024 byte blocks ordered randomly per permutation
  */
 
-class FileHeader extends EncryptableHeader {
+// TODO encrypt with SHA-256 digest of entire file x gpg and this header.
+public class FileHeader extends EncryptableHeader {
 	
 	public static final int SIZE = 64;
 	private static final int CRC_SIZE = 4;

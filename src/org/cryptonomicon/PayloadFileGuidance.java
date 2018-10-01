@@ -45,7 +45,7 @@ import com.google.common.primitives.Longs;
  *  32/CRC32 of preceeding
  */
 
-class PayloadFileGuidance extends EncryptableHeader {
+public class PayloadFileGuidance extends EncryptableHeader {
 	
 	private static int SIZE = 32;
 	

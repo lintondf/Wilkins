@@ -4,10 +4,10 @@ import java.util.Arrays;
 
 import com.google.common.io.BaseEncoding;
 
-class Block {
+public class Block {
 	public static final int BLOCK_SIZE = 1024;
 
-	byte[] contents;
+	public byte[] contents;
 	public int count;
 	
 	public Block() {

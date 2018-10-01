@@ -3,7 +3,7 @@ package org.cryptonomicon;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
-class BlockReader {
+public class BlockReader {
 	RandomAccessFile    raf;
 	long                remaining;
 	Block               current;

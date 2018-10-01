@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.cryptonomicon;
+package org.cryptonomicon.mixers;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -12,6 +12,9 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import javax.crypto.CipherOutputStream;
+
+import org.cryptonomicon.BlockedFile;
+import org.cryptonomicon.PayloadFileGuidance;
 
 /**
  * @author lintondf

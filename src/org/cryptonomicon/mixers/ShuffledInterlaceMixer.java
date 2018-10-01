@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.cryptonomicon;
+package org.cryptonomicon.mixers;
 
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
@@ -16,6 +16,14 @@ import java.util.logging.Level;
 import java.util.zip.InflaterOutputStream;
 
 import javax.crypto.CipherOutputStream;
+
+import org.cryptonomicon.Block;
+import org.cryptonomicon.BlockList;
+import org.cryptonomicon.BlockListIterator;
+import org.cryptonomicon.BlockReader;
+import org.cryptonomicon.BlockedFile;
+import org.cryptonomicon.PayloadFileGuidance;
+import org.cryptonomicon.Wilkins;
 
 /**
  * @author lintondf

@@ -33,7 +33,10 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.cryptonomicon.Configuration.KeyDerivationParameters.ArgonParameters;
+import org.cryptonomicon.configuration.KeyDerivationParameters;
+import org.cryptonomicon.configuration.KeyDerivationParameters.ArgonParameters;
+import org.cryptonomicon.mixers.Mixer;
+import org.cryptonomicon.mixers.ShuffledInterlaceMixer;
 import org.mindrot.BCrypt;
 
 import com.google.common.io.BaseEncoding;
@@ -98,7 +101,7 @@ public class Wilkins {
 
 	protected Mixer mixer = new ShuffledInterlaceMixer();
 	
-	protected Configuration.KeyDerivationParameters parameters = Configuration.KeyDerivationParameters.getDefaults();
+	protected KeyDerivationParameters parameters = KeyDerivationParameters.getDefaults();
 
 	protected Hasher defaultHasher =  com.kosprov.jargon2.api.Jargon2.jargon2Hasher()
 			.type(parameters.getArgonParameters().getType())
