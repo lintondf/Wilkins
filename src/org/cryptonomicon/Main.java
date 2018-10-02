@@ -4,7 +4,10 @@
 package org.cryptonomicon;
 
 import java.io.Console;
+import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 
 import org.apache.commons.cli.CommandLine;
@@ -18,6 +21,8 @@ import org.cryptonomicon.configuration.Configuration;
 import org.cryptonomicon.configuration.Configuration.ConfigurationError;
 import org.cryptonomicon.configuration.KeyDerivationParameters;
 
+import com.kosprov.jargon2.api.Jargon2;
+import com.kosprov.jargon2.api.Jargon2.ByteArray;
 import com.kosprov.jargon2.api.Jargon2.Type;
 import com.kosprov.jargon2.api.Jargon2.Version;
 
@@ -88,25 +93,57 @@ public class Main {
 	        	processHelp( options );
 	        }
 	        
+	        ArrayList<ByteArray> passwords = new ArrayList<>();
+	        ArrayList<File>   files = new ArrayList<>();
+	        
 	        if ( line.hasOption( FILE_PASSWORDS ) ) {
 	        	System.out.println("Wilkins Haystack WARNING: use of command line passwords is rarely wise.");
 	            // initialize the member variable
 	            String[] values = line.getOptionValues(FILE_PASSWORDS);
 	            for (String value : values) 
-	            	System.out.println(value);
+	            	passwords.add( Jargon2.toByteArray(value.toCharArray()).finalizable().clearSource() );
 	        }
 	        
 			configuration.set(line);
 			
-	        for (String arg : line.getArgs() ) {
-	        	System.out.println(arg);
-	        }
-	    } catch( ParseException | ConfigurationError exp ) {
-	        // oops, something went wrong
-	        System.err.println( "Parsing failed.  Reason: " + exp.getMessage() );
-	        
+			for (String filePath : line.getArgList()) {
+				File file = new File(filePath);
+				if (file.exists() && file.isFile()) {
+					files.add(file);
+				} else {
+					System.err.printf("Wilkins Haystack ERROR: file not found: %s", filePath );
+					System.exit(1);
+				}
+			}
+			
+			if (passwords.isEmpty()) {
+		        for (String fileName : line.getArgs() ) {
+		        	System.out.printf("For file %s\n", fileName );
+		        	char[] passwordArray;
+		        	while (true) {
+		        		passwordArray = System.console().readPassword("Enter passphrase: ");
+		        		char check[] = System.console().readPassword("Reenter passphrase: ");
+		        		if (Arrays.equals(passwordArray, check)) {
+				        	Arrays.fill(check, ' ');
+		        			break;
+		        		}
+		        	}
+		        	passwords.add( Jargon2.toByteArray(passwordArray).finalizable().clearSource() );
+		        }
+			}
+			
+			// if the user entered command line passwords they counts must match
+			if (files.size() != passwords.size()) {
+				System.err.printf("Wilkins Haystack ERROR: file and password counts must match. (%d vs %d)\n", 
+						files.size(), passwords.size() );
+				System.exit(1);				
+			}
+			
+			
+	    } catch( ParseException exp ) {
+	        System.err.println( "Wilkins Haystack ERROR: Parsing failed.  Reason: " + exp.getMessage() );
+	    } catch ( ConfigurationError exp ) {
+	        System.err.println( "Wilkins Haystack ERROR: configuration failed.  Reason: " + exp.getMessage() );
 	    }
-
-	    
 	}
 }

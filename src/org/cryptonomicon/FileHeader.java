@@ -1,5 +1,6 @@
 package org.cryptonomicon;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -7,6 +8,7 @@ import java.util.Arrays;
 import java.util.zip.CRC32;
 import java.util.zip.Checksum;
 
+import org.cryptonomicon.configuration.Configuration;
 import org.cryptonomicon.configuration.KeyDerivationParameters;
 
 import com.google.common.io.BaseEncoding;
@@ -16,24 +18,9 @@ import com.kosprov.jargon2.api.Jargon2.Hasher;
 import com.kosprov.jargon2.api.Jargon2.Type;
 import com.kosprov.jargon2.api.Jargon2.Version;
 
-/**
- * FILE FORMAT
- * 64*8/File Header
- *  8/argon type,
- *  8/argon version,
- *  8/memory cost/1024,
- *  8/time cost,
- *  8/key size (bits)
- *  27*8/random
- *  32*8/IV
- * [n+m]*L0 contents bytes in 1024 byte blocks ordered randomly per permutation
- */
-
-// TODO encrypt with SHA-256 digest of entire file x gpg and this header.
 public class FileHeader extends EncryptableHeader {
 	
 	public static final int SIZE = 64;
-	private static final int CRC_SIZE = 4;
 	
 	public FileHeader( Type type, Version version, int memoryCost, int timeCost, int keySize, byte[] salt) {
 		super(SIZE);
@@ -45,15 +32,9 @@ public class FileHeader extends EncryptableHeader {
 			bos.write( Ints.toByteArray( timeCost ) );       // 6
 			bos.write( Ints.toByteArray( keySize ) );       // 10
 			bos.write( Arrays.copyOf(salt,  keySize/8 ) );           // 14 .. 14-1+keySize/8
-			byte[] filler = new byte[SIZE - bos.size() - CRC_SIZE];       
+			byte[] filler = new byte[SIZE - bos.size()];       
 			Wilkins.secureRandom.nextBytes(filler);
 			bos.write( filler );
-			plainText = bos.toByteArray();             
-			
-			Checksum checksum = new CRC32();
-			checksum.update( plainText, 0, plainText.length );
-			byte[] crc = Longs.toByteArray( checksum.getValue() );
-			bos.write(crc, 4, 4 );                    
 			plainText = bos.toByteArray();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -69,15 +50,9 @@ public class FileHeader extends EncryptableHeader {
 			parameters.write(bos);
 			bos.write( Arrays.copyOf(salt,  parameters.getKeySize()/8 ) ); 
 			System.out.println( bos.size() );
-			byte[] filler = new byte[SIZE - bos.size() - CRC_SIZE];       
+			byte[] filler = new byte[SIZE - bos.size()];       
 			Wilkins.secureRandom.nextBytes(filler);
 			bos.write( filler );
-			plainText = bos.toByteArray();             
-			
-			Checksum checksum = new CRC32();
-			checksum.update( plainText, 0, plainText.length );
-			byte[] crc = Longs.toByteArray( checksum.getValue() );
-			bos.write(crc, 4, 4 );                    
 			plainText = bos.toByteArray();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -95,6 +70,18 @@ public class FileHeader extends EncryptableHeader {
 		}
 	}
 	
+	public KeyDerivationParameters getKeyDerivationParameters(Configuration configuration) {
+		System.out.println( Wilkins.toString(this.getPlainText()));
+		ByteArrayInputStream bis = new ByteArrayInputStream( this.getPlainText() );
+		try {
+			return new KeyDerivationParameters( configuration, bis );
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+	
 	private final int parallelism = 4;
 	
 	public Hasher getHasher() {
@@ -107,12 +94,7 @@ public class FileHeader extends EncryptableHeader {
 	public boolean isValid() {
 		if ( plainText == null || plainText.length != SIZE)
 			return false;
-		byte[] content = Arrays.copyOf(plainText, SIZE - CRC_SIZE);
-		Checksum checksum = new CRC32();
-		checksum.update( content, 0, content.length );
-		byte[] crc = Longs.toByteArray( checksum.getValue() );
-		crc = Arrays.copyOfRange(crc, 4, 8);
-		return Arrays.equals(crc, Arrays.copyOfRange(plainText, SIZE - CRC_SIZE, SIZE));		
+		return true;		
 	}
 
 	public Type getType() {

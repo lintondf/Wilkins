@@ -3,10 +3,13 @@ package org.cryptonomicon.configuration;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.security.SecureRandom;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
+import org.cryptonomicon.Wilkins;
 import org.cryptonomicon.configuration.Configuration.ConfigurationError;
+import org.cryptonomicon.configuration.Configuration.Parameter;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Shorts;
@@ -21,6 +24,8 @@ import com.kosprov.jargon2.api.Jargon2.Version;
  */
 public class KeyDerivationParameters {
 	
+	protected Configuration configuration;
+	
 	/** The key size. */
 	protected int keySize;
 	
@@ -33,23 +38,51 @@ public class KeyDerivationParameters {
 	/** The scrypt parameters. */
 	protected KeyDerivationParameters.SCryptParameters sCryptParameters = null;
 	
-	public static final String DERIVATION_KEY_LENGTH = "derivation-key-length";
+	protected static final Configuration.Parameter DERIVATION_KEY_LENGTH = 
+			new Parameter("derivation-key-length", "cryptographic key length in bits", 256, 128, 256 );
+
+	protected static final Configuration.Parameter ARGON_MEMORY_COST  = 
+			new Parameter("argon-memory-cost", "ARGON2 memory cost in KB", 16*1024, 1*1024, 1024*1024 );
+	protected static final Configuration.Parameter ARGON_TIME_COST = 
+			new Parameter("argon-timeCost", "Argon2 timeCost", 32, 0, 1024 ); 
+	protected static final Configuration.Parameter ARGON_PARALLELISM = 
+			new Parameter("argon-parallelism", "Argon2 parallelism", 2, 1, 128 );
+	
+	protected static final Configuration.Parameter BCRYPT_ROUNDS = 
+			new Parameter("bcrypt-rounds", "BCRYPT rounds <integer>", 14, 0, 128 );
+	
+	protected static final Configuration.Parameter SCRYPT_N = 
+			new Parameter("scrypt-n", "SCRYPT N <integer>", 32*1024, 0, 128*1024 );
+	protected static final Configuration.Parameter SCRYPT_r = 
+			new Parameter("scrypt-r", "SCRYPT r <integer>", 4, 0, 128 );
+	protected static final Configuration.Parameter SCRYPT_p = 
+			new Parameter("scrypt-p", "SCRYPT p <integer>", 32, 0, 64 );
+	
+	public String toString() {
+		StringBuffer sb = new StringBuffer();
+		sb.append(String.format("KeyDerivationParameters.keysize = %d\n", keySize) );
+		sb.append( this.argonParameters.toString() );
+		sb.append( this.bCryptParameters.toString() );
+		sb.append( this.sCryptParameters.toString() );
+		return sb.toString();
+	}
+	
 	
 	public void addOptions(Options options) {
-		options.addOption("k", KeyDerivationParameters.DERIVATION_KEY_LENGTH, true, "cryptographic key length in bits");
+		options.addOption("k", DERIVATION_KEY_LENGTH.getOptionName(), true, DERIVATION_KEY_LENGTH.getHelpMessage());
 		this.argonParameters.addOptions(options);
 		this.bCryptParameters.addOptions(options);
 		this.sCryptParameters.addOptions(options);
 	}
 	
 	public void set(CommandLine line) throws ConfigurationError {
-		if (line.hasOption(DERIVATION_KEY_LENGTH)) {
-			String value = line.getOptionValue(DERIVATION_KEY_LENGTH);
+		if (line.hasOption(DERIVATION_KEY_LENGTH.getOptionName())) {
+			String value = line.getOptionValue(DERIVATION_KEY_LENGTH.getOptionName());
 			int keyLength = Integer.parseInt( value );
-			if (keyLength == 128 || keyLength == 256) {
+			if (keyLength == DERIVATION_KEY_LENGTH.getMinValue() || keyLength == DERIVATION_KEY_LENGTH.getMaxValue()) {
 				this.keySize = keyLength;
 			} else {
-				throw new Configuration.ConfigurationError(DERIVATION_KEY_LENGTH, value, "Key length must be 128 or 256");
+				throw new Configuration.ConfigurationError(DERIVATION_KEY_LENGTH.getOptionName(), value, "Key length must be 128 or 256");
 			}
 		}
 		this.argonParameters.set(line);
@@ -125,7 +158,8 @@ public class KeyDerivationParameters {
 	 *
 	 * @param keySize the key size
 	 */
-	public KeyDerivationParameters( int keySize ) {
+	public KeyDerivationParameters( Configuration configuration, int keySize ) {
+		this.configuration = configuration;
 		this.keySize = keySize;
 	}
 	
@@ -135,10 +169,9 @@ public class KeyDerivationParameters {
 	 * @param bis the bis
 	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
-	public KeyDerivationParameters( InputStream bis ) throws IOException {
-		byte[] array = new byte[4];
-		bis.read(array);
-		this.keySize = Ints.fromByteArray(array);
+	public KeyDerivationParameters( Configuration configuration, InputStream bis ) throws IOException {
+		this.configuration = configuration;
+		this.keySize = configuration.readMaskedInt(bis, DERIVATION_KEY_LENGTH);
 		this.argonParameters = new ArgonParameters(bis);
 		this.bCryptParameters = new BCryptParameters(bis);
 		this.sCryptParameters = new SCryptParameters(bis);
@@ -151,7 +184,7 @@ public class KeyDerivationParameters {
 	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
 	public void write( OutputStream bos ) throws IOException {
-		bos.write( Ints.toByteArray(this.keySize));
+		configuration.writeMaskedInt(bos, keySize, DERIVATION_KEY_LENGTH);
 		this.argonParameters.write(bos);
 		this.bCryptParameters.write(bos);
 		this.sCryptParameters.write(bos);
@@ -162,11 +195,11 @@ public class KeyDerivationParameters {
 	 *
 	 * @return the defaults
 	 */
-	public static KeyDerivationParameters getDefaults() {
-		KeyDerivationParameters parameters = new KeyDerivationParameters(256);
-		parameters.setArgonParameters( ArgonParameters.getDefaults() );
-		parameters.setBCryptParameters( BCryptParameters.getDefaults() );
-		parameters.setSCryptParameters( SCryptParameters.getDefaults() );
+	public static KeyDerivationParameters getDefaults(Configuration configuration) {
+		KeyDerivationParameters parameters = new KeyDerivationParameters(configuration, DERIVATION_KEY_LENGTH.getDefaultValue() );
+		parameters.setArgonParameters( parameters.new ArgonParameters() );
+		parameters.setBCryptParameters( parameters.new BCryptParameters() );
+		parameters.setSCryptParameters( parameters.new SCryptParameters() );
 		return parameters;
 	}
 	
@@ -174,7 +207,7 @@ public class KeyDerivationParameters {
 	/**
 	 * The Class ArgonParameters.
 	 */
-	public static class ArgonParameters {
+	public class ArgonParameters {
 		
 		/** The type. */
 		protected Type type;
@@ -191,6 +224,16 @@ public class KeyDerivationParameters {
 		/** The parallelism. */
 		protected short parallelism;
 		
+		public String toString() {
+			StringBuffer sb = new StringBuffer();
+			sb.append( String.format("Argon2 type =  %s\n", type.toString() ));
+			sb.append( String.format("Argon2 version =  %s\n", version.toString() ));
+			sb.append( String.format("Argon2 memoryCost =  %d\n", memoryCost ));
+			sb.append( String.format("Argon2 timeCost =  %d\n", timeCost ));
+			sb.append( String.format("Argon2 parallelism =  %d\n", parallelism ));
+			return sb.toString();
+		}
+
 		/**
 		 * Gets the type.
 		 *
@@ -237,6 +280,20 @@ public class KeyDerivationParameters {
 		}
 
 		/**
+		 * Gets the defaults.
+		 *
+		 * @return the defaults
+		 */
+		public ArgonParameters() {
+			this(Type.ARGON2id,
+					Version.V13,
+					ARGON_MEMORY_COST.getDefaultValue(),
+					ARGON_TIME_COST.getDefaultValue(),
+					ARGON_PARALLELISM.getDefaultValue() );
+		}
+
+		
+		/**
 		 * Instantiates a new argon parameters.
 		 *
 		 * @param type the type
@@ -262,13 +319,9 @@ public class KeyDerivationParameters {
 		public ArgonParameters( InputStream bis) throws IOException {
 			type = Type.values()[ bis.read() ];
 			version = Version.values()[ bis.read() ];
-			byte[] input = new byte[4];
-			bis.read(input);
-			memoryCost = Ints.fromByteArray(input);
-			bis.read(input);
-			timeCost = Shorts.fromByteArray(input);
-			bis.read(input);
-			parallelism = Shorts.fromByteArray(input);
+			memoryCost = configuration.readMaskedInt(bis, ARGON_MEMORY_COST );
+			timeCost = configuration.readMaskedShort(bis, ARGON_TIME_COST );
+			parallelism = configuration.readMaskedShort(bis, ARGON_PARALLELISM );
 		}
 		
 		/**
@@ -279,36 +332,15 @@ public class KeyDerivationParameters {
 		 */
 		public void write(OutputStream bos ) throws IOException {
 			bos.write( (byte) type.ordinal());               
-			bos.write( (byte) version.ordinal() );          
-			bos.write( Ints.toByteArray( memoryCost ) ); 
-			bos.write( Shorts.toByteArray( timeCost ) );  
-			bos.write( Shorts.toByteArray( parallelism ) );		
+			bos.write( (byte) version.ordinal() );
+			configuration.writeMaskedInt(bos, memoryCost, ARGON_MEMORY_COST );
+			configuration.writeMaskedShort(bos, timeCost, ARGON_TIME_COST );
+			configuration.writeMaskedShort(bos, parallelism, ARGON_PARALLELISM );
 		}
 		
-		/**
-		 * Gets the defaults.
-		 *
-		 * @return the defaults
-		 */
-		public static KeyDerivationParameters.ArgonParameters getDefaults() {
-			return new ArgonParameters(
-					Type.ARGON2id,
-					Version.V13,
-					DEFAULT_ARGON_MEMORY_COST,
-					DEFAULT_ARGON_TIME_COST,
-					DEFAULT_ARGON_PARALLELISM );
-
-		}
-		
-		public static final int DEFAULT_ARGON_MEMORY_COST = 16*1024;
-		public static final int DEFAULT_ARGON_TIME_COST = 32;
-		public static final int DEFAULT_ARGON_PARALLELISM = 2;
 		
 		public static final String ARGON_TYPE = "argon-type";
 		public static final String ARGON_VERSION = "argon-value";
-		public static final String ARGON_MEMORY_COST = "argon-memoryCost";
-		public static final String ARGON_TIME_COST = "argon-timeCost";
-		public static final String ARGON_PARALLELISM = "argon-parallelism";
 		
 		public void set(CommandLine line) throws ConfigurationError {
 			if (line.hasOption(ARGON_TYPE)) {
@@ -327,48 +359,30 @@ public class KeyDerivationParameters {
 					throw new ConfigurationError(ARGON_VERSION, value, "Argon2 version not recognized.");					
 				}
 			}
-			if (line.hasOption(ARGON_MEMORY_COST)) {
-				String value = line.getOptionValue(ARGON_MEMORY_COST);
-				int cost = Integer.parseInt( value );
-				if (cost <= 0 || cost >= 1024*1024) {
-					this.memoryCost = cost;
-				} else {
-					throw new Configuration.ConfigurationError(ARGON_MEMORY_COST, value, "memory cost in KB must be > 0 and < 1024^2");
-				}
+			if (line.hasOption(ARGON_MEMORY_COST.getOptionName())) {
+				this.memoryCost = Configuration.optionAsInteger( line, ARGON_MEMORY_COST );
 			}
-			if (line.hasOption(ARGON_TIME_COST)) {
-				String value = line.getOptionValue(ARGON_TIME_COST);
-				int cost = Integer.parseInt( value );
-				if (cost <= 0 || cost >= 1024) {
-					this.timeCost = (short) cost;
-				} else {
-					throw new Configuration.ConfigurationError(ARGON_TIME_COST, value, "time cost must be > 0 and < 1024");
-				}
+			if (line.hasOption(ARGON_TIME_COST.getOptionName())) {
+				this.timeCost = (short) Configuration.optionAsInteger( line, ARGON_TIME_COST );
 			}
-			if (line.hasOption(ARGON_PARALLELISM)) {
-				String value = line.getOptionValue(ARGON_PARALLELISM);
-				int cost = Integer.parseInt( value );
-				if (cost <= 0 || cost >= 128) {
-					this.parallelism = (short) cost;
-				} else {
-					throw new Configuration.ConfigurationError(ARGON_PARALLELISM, value, "parallelism must be > 0 and < 128");
-				}
+			if (line.hasOption(ARGON_PARALLELISM.getOptionName())) {
+				this.parallelism = (short) Configuration.optionAsInteger( line, ARGON_PARALLELISM );
 			}
 		}
 		
 		public void addOptions(Options options) {
 			options.addOption(null, ARGON_TYPE, true, "ARGON type [ARGON2d|ARGON2i|ARGON2id]; default ARGON2id");
 			options.addOption(null, ARGON_VERSION, true, "ARGON version [V10|V13]; default V13");
-			options.addOption(null, ARGON_MEMORY_COST, true, "ARGON memory cost <integer>; default " + DEFAULT_ARGON_MEMORY_COST);
-			options.addOption(null, ARGON_TIME_COST, true, "ARGON time cost <integer>; default " +  DEFAULT_ARGON_TIME_COST );
-			options.addOption(null, ARGON_PARALLELISM, true, "ARGON parallelism <integer>; default " + DEFAULT_ARGON_PARALLELISM);
+			options.addOption(null, ARGON_MEMORY_COST.getOptionName(), true, ARGON_MEMORY_COST.getHelpMessage() );
+			options.addOption(null, ARGON_TIME_COST.getOptionName(), true, ARGON_TIME_COST.getHelpMessage() );
+			options.addOption(null, ARGON_PARALLELISM.getOptionName(), true, ARGON_PARALLELISM.getHelpMessage());
 		}
 	}
 	
 	/**
 	 * The Class BCryptParameters.
 	 */
-	public static class BCryptParameters {
+	public class BCryptParameters {
 		
 		/** The rounds. */
 		protected short rounds;
@@ -398,10 +412,22 @@ public class KeyDerivationParameters {
 		 * @throws IOException Signals that an I/O exception has occurred.
 		 */
 		public BCryptParameters( InputStream bis ) throws IOException {
-			byte[] array = new byte[2];
-			bis.read(array);
-			this.rounds = Shorts.fromByteArray(array);
+			this.rounds = configuration.readMaskedShort(bis, BCRYPT_ROUNDS);
 		}
+		
+		/**
+		 * Gets the defaults.
+		 *
+		 * @return the defaults
+		 */
+		public BCryptParameters() {
+			this(14);
+		}
+		
+		public String toString() {
+			return String.format("BCrypt rounds = %d\n", rounds );
+		}
+		
 		
 		/**
 		 * Write.
@@ -410,26 +436,18 @@ public class KeyDerivationParameters {
 		 * @throws IOException Signals that an I/O exception has occurred.
 		 */
 		public void write( OutputStream bos ) throws IOException {
-			bos.write( Shorts.toByteArray(this.rounds));
+			configuration.writeMaskedShort(bos, rounds, BCRYPT_ROUNDS);
 		}
 		
-		/**
-		 * Gets the defaults.
-		 *
-		 * @return the defaults
-		 */
-		public static KeyDerivationParameters.BCryptParameters getDefaults() {
-			return new BCryptParameters(14);
-		}
 
-		public void set(CommandLine line) {
-			// TODO Auto-generated method stub
-			
+		public void set(CommandLine line) throws ConfigurationError {
+			if (line.hasOption(BCRYPT_ROUNDS.getOptionName())) {
+				this.rounds = (short) Configuration.optionAsInteger( line, BCRYPT_ROUNDS );
+			}
 		}
 
 		public void addOptions(Options options) {
-			// TODO Auto-generated method stub
-			
+			options.addOption(null, BCRYPT_ROUNDS.getOptionName(), true, BCRYPT_ROUNDS.getHelpMessage() );
 		}
 
 	}
@@ -437,7 +455,7 @@ public class KeyDerivationParameters {
 	/**
 	 * The Class SCryptParameters.
 	 */
-	public static class SCryptParameters {
+	public class SCryptParameters {
 		
 		/** The n. */
 		protected int N;
@@ -489,21 +507,34 @@ public class KeyDerivationParameters {
 		}
 		
 		/**
+		 * Gets the defaults.
+		 *
+		 * @return the defaults
+		 */
+		public SCryptParameters() {
+			this( SCRYPT_N.getDefaultValue(), SCRYPT_r.getDefaultValue(), SCRYPT_p.getDefaultValue() );
+		}
+
+		/**
 		 * Instantiates a new s crypt parameters.
 		 *
 		 * @param bis the bis
 		 * @throws IOException Signals that an I/O exception has occurred.
 		 */
 		public SCryptParameters( InputStream bis ) throws IOException {
-			byte[] array = new byte[4];
-			bis.read(array);
-			this.N = Ints.fromByteArray(array);
-			array = new byte[2];
-			bis.read(array);
-			this.r = Shorts.fromByteArray(array);
-			bis.read(array);
-			this.p = Shorts.fromByteArray(array);
+			this.N = configuration.readMaskedInt(bis, SCRYPT_N);
+			this.r = configuration.readMaskedShort(bis, SCRYPT_r);
+			this.p = configuration.readMaskedShort(bis, SCRYPT_p);
 		}
+		
+		public String toString() {
+			StringBuffer sb = new StringBuffer();
+			sb.append( String.format("SCrypt N = %d\n", N ) );
+			sb.append( String.format("SCrypt r = %d\n", r ) );
+			sb.append( String.format("SCrypt p = %d\n", p ) );
+			return sb.toString();
+		}
+
 		
 		/**
 		 * Write.
@@ -512,29 +543,27 @@ public class KeyDerivationParameters {
 		 * @throws IOException Signals that an I/O exception has occurred.
 		 */
 		public void write( OutputStream bos ) throws IOException {
-			bos.write( Ints.toByteArray(this.N));
-			bos.write( Shorts.toByteArray(this.r));
-			bos.write( Shorts.toByteArray(this.p));
+			configuration.writeMaskedInt(bos, this.N, SCRYPT_N);
+			configuration.writeMaskedShort(bos, this.r, SCRYPT_r);
+			configuration.writeMaskedShort(bos, this.p, SCRYPT_p);
 		}
 		
-		
-		/**
-		 * Gets the defaults.
-		 *
-		 * @return the defaults
-		 */
-		public static KeyDerivationParameters.SCryptParameters getDefaults() {
-			return new SCryptParameters( 32*1024, 4, 2 );
-		}
-
-		public void set(CommandLine line) {
-			// TODO Auto-generated method stub
-			
+		public void set(CommandLine line) throws ConfigurationError {
+			if (line.hasOption(SCRYPT_N.getOptionName())) {
+				this.N = Configuration.optionAsInteger( line, SCRYPT_N );
+			}
+			if (line.hasOption(SCRYPT_r.getOptionName())) {
+				this.N = Configuration.optionAsInteger( line, SCRYPT_r);
+			}
+			if (line.hasOption(SCRYPT_p.getOptionName())) {
+				this.N = Configuration.optionAsInteger( line, SCRYPT_p );
+			}
 		}
 
 		public void addOptions(Options options) {
-			// TODO Auto-generated method stub
-			
+			options.addOption(null, SCRYPT_N.getOptionName(), true, SCRYPT_N.getHelpMessage() );
+			options.addOption(null, SCRYPT_r.getOptionName(), true, SCRYPT_r.getHelpMessage() );
+			options.addOption(null, SCRYPT_p.getOptionName(), true, SCRYPT_p.getHelpMessage() );
 		}
 	}
 

@@ -104,12 +104,6 @@ public class FileHeaderTest {
 		byte[] salt = new byte[256/8];
 		FileHeader fileHeader = new FileHeader( Type.ARGON2i, Version.V10, 1024, 5, 256, salt );
 		assertTrue( fileHeader.isValid() );
-		fileHeader.getPlainText()[0] = (byte) (0x01 ^ fileHeader.getPlainText()[0]);
-		assertFalse( fileHeader.isValid());
-		fileHeader.setPlainText( new byte[10] );
-		assertFalse( fileHeader.isValid());
-		fileHeader.setPlainText( null );
-		assertFalse( fileHeader.isValid());
 	}
 
 	/**

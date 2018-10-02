@@ -33,6 +33,7 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.cryptonomicon.configuration.Configuration;
 import org.cryptonomicon.configuration.KeyDerivationParameters;
 import org.cryptonomicon.configuration.KeyDerivationParameters.ArgonParameters;
 import org.cryptonomicon.mixers.Mixer;
@@ -101,7 +102,8 @@ public class Wilkins {
 
 	protected Mixer mixer = new ShuffledInterlaceMixer();
 	
-	protected KeyDerivationParameters parameters = KeyDerivationParameters.getDefaults();
+	protected Configuration configuration = new Configuration();
+	protected KeyDerivationParameters parameters = KeyDerivationParameters.getDefaults(configuration);
 
 	protected Hasher defaultHasher =  com.kosprov.jargon2.api.Jargon2.jargon2Hasher()
 			.type(parameters.getArgonParameters().getType())
@@ -244,11 +246,12 @@ public class Wilkins {
 		}
 		System.out.printf("Read 0: %d\n", file.getFilePointer());
 		System.out.println(fileHeader.toString() );
-		ArgonParameters argonParameters = new ArgonParameters( fileHeader.getType(),
+		Configuration configuration = new Configuration();
+		ArgonParameters argonParameters = configuration.getKeyDerivationParameters().getArgonParameters(); /* fileHeader.getType(),
 			fileHeader.getVersion(),
 			fileHeader.getMemoryCost(),
 			fileHeader.getTimeCost(),
-			2 );
+			2 );*/
 		parameters.setArgonParameters(argonParameters);
 		
 		keyLength = fileHeader.getKeySize();
@@ -547,7 +550,8 @@ public class Wilkins {
 		secureRandom.nextBytes(iv);
 
 		// TODO FileHeader saves/loads full KeyDerivationParameter set
-		ArgonParameters ap = ArgonParameters.getDefaults();
+		Configuration configuration = new Configuration();
+		ArgonParameters ap = configuration.getKeyDerivationParameters().getArgonParameters();
 		FileHeader fileHeader = new FileHeader(ap.getType(), ap.getVersion(), ap.getMemoryCost(), ap.getTimeCost(), ipmec.keyLength, iv );
 
 		ipmec.addDataFile("data1.txt", fileHeader, "key1".toCharArray());
