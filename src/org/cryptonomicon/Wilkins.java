@@ -75,7 +75,6 @@ import com.lambdaworks.crypto.SCrypt;
  */
 public class Wilkins {
 	
-	
 	protected ArrayList<BlockedFile> dataFiles = new ArrayList<>();
 	protected ArrayList<BlockedFile> fillerFiles = new ArrayList<>();
 	protected long maxLength = 0L;
@@ -182,6 +181,17 @@ public class Wilkins {
 		this();
 		this.mixer = mixer;
 	}
+	
+	public Wilkins( Configuration configuration ) {
+		this();
+		this.configuration = configuration;
+		this.parameters = configuration.getKeyDerivationParameters();
+	}
+
+	public Wilkins( Configuration configuration, Mixer mixer ) {
+		this(configuration);
+		this.mixer = mixer;
+	}
 
 	/**
 	 * @return the cipher
@@ -204,7 +214,7 @@ public class Wilkins {
 				return false;
 			//byte[] key = fileHeader.getHasher().password(passPhrase.getBytes()).rawHash();
 			ByteArray key = Jargon2.toByteArray(
-					deriveKey(passPhrase, Jargon2.toByteArray(fileHeader.getSalt()) )
+					deriveKey(passPhrase, fileHeader.getSalt() )
 					).finalizable().clearSource();
 
 			BlockedFile pair = new BlockedFile(file, key);
@@ -238,15 +248,15 @@ public class Wilkins {
 	}
 	
 	public boolean read( RandomAccessFile file, OutputStream os, ByteArray passPhrase ) throws IOException {
+		Configuration configuration = new Configuration();  // TODO hoist to class
 		InflaterOutputStream ios = new InflaterOutputStream( os );
 		
-		FileHeader fileHeader = new FileHeader(file);
+		FileHeader fileHeader = new FileHeader(configuration, file);
 		if (! fileHeader.isValid()) {
 			return false;
 		}
 		System.out.printf("Read 0: %d\n", file.getFilePointer());
 		System.out.println(fileHeader.toString() );
-		Configuration configuration = new Configuration();
 		ArgonParameters argonParameters = configuration.getKeyDerivationParameters().getArgonParameters(); /* fileHeader.getType(),
 			fileHeader.getVersion(),
 			fileHeader.getMemoryCost(),
@@ -263,7 +273,7 @@ public class Wilkins {
 //		//System.out.printf("Key, Pass = %s %s\n", toString(key), passPhrase );
 //		SecretKey secretKey = new SecretKeySpec(key, "AES");
 		
-		byte[] key = deriveKey(passPhrase, Jargon2.toByteArray(fileHeader.getSalt()) );
+		byte[] key = deriveKey(passPhrase, fileHeader.getSalt() );
 		SecretKey secretKey = new SecretKeySpec(key, "AES");
 		
 		int fileIndex = 0;
@@ -549,10 +559,7 @@ public class Wilkins {
 		byte[] iv = new byte[Wilkins.AES_IV_BYTES];
 		secureRandom.nextBytes(iv);
 
-		// TODO FileHeader saves/loads full KeyDerivationParameter set
-		Configuration configuration = new Configuration();
-		ArgonParameters ap = configuration.getKeyDerivationParameters().getArgonParameters();
-		FileHeader fileHeader = new FileHeader(ap.getType(), ap.getVersion(), ap.getMemoryCost(), ap.getTimeCost(), ipmec.keyLength, iv );
+		FileHeader fileHeader = new FileHeader(ipmec.parameters, Jargon2.toByteArray(iv) );
 
 		ipmec.addDataFile("data1.txt", fileHeader, Jargon2.toByteArray("key1"));
 		ipmec.addDataFile("data2.txt", fileHeader, Jargon2.toByteArray("key2"));

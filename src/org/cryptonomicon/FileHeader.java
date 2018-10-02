@@ -14,6 +14,8 @@ import org.cryptonomicon.configuration.KeyDerivationParameters;
 import com.google.common.io.BaseEncoding;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+import com.kosprov.jargon2.api.Jargon2;
+import com.kosprov.jargon2.api.Jargon2.ByteArray;
 import com.kosprov.jargon2.api.Jargon2.Hasher;
 import com.kosprov.jargon2.api.Jargon2.Type;
 import com.kosprov.jargon2.api.Jargon2.Version;
@@ -22,34 +24,17 @@ public class FileHeader extends EncryptableHeader {
 	
 	public static final int SIZE = 64;
 	
-	public FileHeader( Type type, Version version, int memoryCost, int timeCost, int keySize, byte[] salt) {
-		super(SIZE);
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		try {
-			bos.write( (byte) type.ordinal());                       // 0
-			bos.write( (byte) version.ordinal() );                   // 1
-			bos.write( Ints.toByteArray( memoryCost ) );     // 2
-			bos.write( Ints.toByteArray( timeCost ) );       // 6
-			bos.write( Ints.toByteArray( keySize ) );       // 10
-			bos.write( Arrays.copyOf(salt,  keySize/8 ) );           // 14 .. 14-1+keySize/8
-			byte[] filler = new byte[SIZE - bos.size()];       
-			Wilkins.secureRandom.nextBytes(filler);
-			bos.write( filler );
-			plainText = bos.toByteArray();
-		} catch (IOException e) {
-			e.printStackTrace();
-			plainText = null;
-		}
-		
-	}
+	protected KeyDerivationParameters keyDerivationParameters;
+	protected ByteArray salt;
 	
-	public FileHeader( KeyDerivationParameters parameters, byte[] salt) {
+	public FileHeader( KeyDerivationParameters parameters, ByteArray salt) {
 		super(SIZE);
+		this.keyDerivationParameters = parameters;
+		this.salt = salt;
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		try {
 			parameters.write(bos);
-			bos.write( Arrays.copyOf(salt,  parameters.getKeySize()/8 ) ); 
-			System.out.println( bos.size() );
+			bos.write( Arrays.copyOf(salt.getBytes(),  parameters.getKeySize()/8 ) ); 
 			byte[] filler = new byte[SIZE - bos.size()];       
 			Wilkins.secureRandom.nextBytes(filler);
 			bos.write( filler );
@@ -61,36 +46,27 @@ public class FileHeader extends EncryptableHeader {
 		
 	}
 	
-	public FileHeader(RandomAccessFile file) {
+	public FileHeader(Configuration configuration, RandomAccessFile file) {
 		super(SIZE);
 		try {
 			file.read(plainText);
+			ByteArrayInputStream bis = new ByteArrayInputStream( this.getPlainText() );
+			this.keyDerivationParameters = new KeyDerivationParameters( configuration, bis );
+			this.salt = Jargon2.toByteArray( new byte[keyDerivationParameters.getKeySize()/8] );
+			bis.read( this.salt.getBytes() );
 		} catch (IOException e) {
 			plainText = null;
 		}
 	}
 	
-	public KeyDerivationParameters getKeyDerivationParameters(Configuration configuration) {
-		System.out.println( Wilkins.toString(this.getPlainText()));
-		ByteArrayInputStream bis = new ByteArrayInputStream( this.getPlainText() );
-		try {
-			return new KeyDerivationParameters( configuration, bis );
-		} catch (IOException e) {
-			e.printStackTrace();
-			return null;
-		}
+	public KeyDerivationParameters getKeyDerivationParameters() {
+		return this.keyDerivationParameters;
 	}
 	
-	
-	private final int parallelism = 4;
-	
-	//TODO move to Argon2 configuration class
-	public Hasher getHasher() {
-		return 	com.kosprov.jargon2.api.Jargon2.jargon2Hasher().type(getType()).version(getVersion())
-				.memoryCost(getMemoryCost()).timeCost(getTimeCost()).parallelism(parallelism)
-				.hashLength(getKeySize()/8)
-				.salt(getSalt());
+	public ByteArray getSalt() {
+		return this.salt;
 	}
+	
 	
 	public boolean isValid() {
 		if ( plainText == null || plainText.length != SIZE)
@@ -98,43 +74,15 @@ public class FileHeader extends EncryptableHeader {
 		return true;		
 	}
 
-	private Type getType() {
-		return Type.values()[plainText[0]];
-	}
-	
-	private Version getVersion() {
-		return Version.values()[plainText[1]];
-	}
-	
-	private int getMemoryCost() {
-		return Ints.fromByteArray( Arrays.copyOfRange(plainText, 2, 6) );
-	}
-	
-	private int getTimeCost() {
-		return Ints.fromByteArray( Arrays.copyOfRange(plainText, 6, 10) );
-	}
-	
-	private int getKeySize() {
-		return Ints.fromByteArray( Arrays.copyOfRange(plainText, 10, 14) );
-	}
-	
-	private int getIterations() {
-		// TODO Auto-generated method stub
-		return 100000;
-	}
-
-	public byte[] getSalt() {
-		int hashLength = getKeySize()/8;
-		return Arrays.copyOfRange(plainText,  14, 14+hashLength);
-	}
-	
 	public byte[] getIV(int offset) {
-		return Arrays.copyOfRange(plainText, 14, 14+Wilkins.AES_IV_BYTES);
+		return Arrays.copyOfRange(this.salt.getBytes(), 0, Wilkins.AES_IV_BYTES);
 	}
 	
 	public String toString() {
-		return String.format("%s %s %d %d %d %s", getType().toString(), getVersion().toString(), getMemoryCost(), getTimeCost(), getKeySize(),
-				BaseEncoding.base16().lowerCase().encode(getSalt()) );
+		String kdpStr = this.keyDerivationParameters.toString().replaceAll("\n", "; ");
+		
+		return String.format("%s %ss", kdpStr,
+				BaseEncoding.base16().lowerCase().encode(getSalt().getBytes()) );
 				
 	}
 

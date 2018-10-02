@@ -17,6 +17,7 @@ import org.cryptonomicon.Wilkins;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Shorts;
+import com.kosprov.jargon2.api.Jargon2;
 import com.kosprov.jargon2.api.Jargon2.Type;
 
 
@@ -288,9 +289,9 @@ public class Configuration {
 //		System.out.println( bos.toByteArray().length );
 		byte[] iv = new byte[32];
 		configuration.random.nextBytes(iv);
-		FileHeader fh = new FileHeader( kdp, iv );
+		FileHeader fh = new FileHeader( kdp, Jargon2.toByteArray(iv) );
 		System.out.println( Wilkins.toString( fh.getPlainText() ) );
-		KeyDerivationParameters kdp2 = fh.getKeyDerivationParameters(configuration);
+		KeyDerivationParameters kdp2 = fh.getKeyDerivationParameters();
 		String r2 = kdp2.toString();
 		System.out.println( r1.equals(r2));
 	}
