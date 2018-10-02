@@ -13,6 +13,8 @@ import org.cryptonomicon.configuration.Configuration.Parameter;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Shorts;
+import com.kosprov.jargon2.api.Jargon2.ByteArray;
+import com.kosprov.jargon2.api.Jargon2.Hasher;
 import com.kosprov.jargon2.api.Jargon2.Type;
 import com.kosprov.jargon2.api.Jargon2.Version;
 
@@ -233,6 +235,14 @@ public class KeyDerivationParameters {
 			sb.append( String.format("Argon2 parallelism =  %d\n", parallelism ));
 			return sb.toString();
 		}
+		
+		public Hasher getHasher( ByteArray salt) {
+			return 	com.kosprov.jargon2.api.Jargon2.jargon2Hasher().type(getType()).version(getVersion())
+					.memoryCost(getMemoryCost()).timeCost(getTimeCost()).parallelism(parallelism)
+					.hashLength(getKeySize()/8)
+					.salt(salt);
+		}
+
 
 		/**
 		 * Gets the type.

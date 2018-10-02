@@ -84,6 +84,7 @@ public class FileHeader extends EncryptableHeader {
 	
 	private final int parallelism = 4;
 	
+	//TODO move to Argon2 configuration class
 	public Hasher getHasher() {
 		return 	com.kosprov.jargon2.api.Jargon2.jargon2Hasher().type(getType()).version(getVersion())
 				.memoryCost(getMemoryCost()).timeCost(getTimeCost()).parallelism(parallelism)
@@ -97,27 +98,27 @@ public class FileHeader extends EncryptableHeader {
 		return true;		
 	}
 
-	public Type getType() {
+	private Type getType() {
 		return Type.values()[plainText[0]];
 	}
 	
-	public Version getVersion() {
+	private Version getVersion() {
 		return Version.values()[plainText[1]];
 	}
 	
-	public int getMemoryCost() {
+	private int getMemoryCost() {
 		return Ints.fromByteArray( Arrays.copyOfRange(plainText, 2, 6) );
 	}
 	
-	public int getTimeCost() {
+	private int getTimeCost() {
 		return Ints.fromByteArray( Arrays.copyOfRange(plainText, 6, 10) );
 	}
 	
-	public int getKeySize() {
+	private int getKeySize() {
 		return Ints.fromByteArray( Arrays.copyOfRange(plainText, 10, 14) );
 	}
 	
-	public int getIterations() {
+	private int getIterations() {
 		// TODO Auto-generated method stub
 		return 100000;
 	}

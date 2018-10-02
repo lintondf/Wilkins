@@ -197,14 +197,14 @@ public class Wilkins {
 		this.cipher = cipher;
 	}
 
-	public boolean addDataFile(String path, FileHeader fileHeader, char[] passPhrase) {
+	public boolean addDataFile(String path, FileHeader fileHeader, ByteArray passPhrase) {
 		try {
 			File file = new File(path);
 			if (!file.exists() && file.isFile() && file.length() > 0L)
 				return false;
 			//byte[] key = fileHeader.getHasher().password(passPhrase.getBytes()).rawHash();
 			ByteArray key = Jargon2.toByteArray(
-					deriveKey(fileHeader.getHasher(), fileHeader.getKeySize(), passPhrase, fileHeader.getSalt() )
+					deriveKey(passPhrase, Jargon2.toByteArray(fileHeader.getSalt()) )
 					).finalizable().clearSource();
 
 			BlockedFile pair = new BlockedFile(file, key);
@@ -237,7 +237,7 @@ public class Wilkins {
 		fillerCount = m;
 	}
 	
-	public boolean read( RandomAccessFile file, OutputStream os, char[] passPhrase ) throws IOException {
+	public boolean read( RandomAccessFile file, OutputStream os, ByteArray passPhrase ) throws IOException {
 		InflaterOutputStream ios = new InflaterOutputStream( os );
 		
 		FileHeader fileHeader = new FileHeader(file);
@@ -254,7 +254,7 @@ public class Wilkins {
 			2 );*/
 		parameters.setArgonParameters(argonParameters);
 		
-		keyLength = fileHeader.getKeySize();
+		keyLength = configuration.getKeyDerivationParameters().getKeySize();
 		hashLength = keyLength/8;
 		
 		//System.out.printf("IV %s\n", toString(iv));
@@ -263,7 +263,7 @@ public class Wilkins {
 //		//System.out.printf("Key, Pass = %s %s\n", toString(key), passPhrase );
 //		SecretKey secretKey = new SecretKeySpec(key, "AES");
 		
-		byte[] key = deriveKey(fileHeader.getHasher(), fileHeader.getKeySize(), passPhrase, fileHeader.getSalt() );
+		byte[] key = deriveKey(passPhrase, Jargon2.toByteArray(fileHeader.getSalt()) );
 		SecretKey secretKey = new SecretKeySpec(key, "AES");
 		
 		int fileIndex = 0;
@@ -554,8 +554,8 @@ public class Wilkins {
 		ArgonParameters ap = configuration.getKeyDerivationParameters().getArgonParameters();
 		FileHeader fileHeader = new FileHeader(ap.getType(), ap.getVersion(), ap.getMemoryCost(), ap.getTimeCost(), ipmec.keyLength, iv );
 
-		ipmec.addDataFile("data1.txt", fileHeader, "key1".toCharArray());
-		ipmec.addDataFile("data2.txt", fileHeader, "key2".toCharArray());
+		ipmec.addDataFile("data1.txt", fileHeader, Jargon2.toByteArray("key1"));
+		ipmec.addDataFile("data2.txt", fileHeader, Jargon2.toByteArray("key2"));
 		ipmec.addFillerFile("filler1.txt");
 		ipmec.setRandomFillerCount(3);
 		
@@ -595,7 +595,7 @@ public class Wilkins {
 		try {
 			File in = new File("output.gpg");
 			RandomAccessFile file = new RandomAccessFile( in, "r");
-			ipmec.read( file, new FileOutputStream(new File("test_read.out")), "key1".toCharArray());
+			ipmec.read( file, new FileOutputStream(new File("test_read.out")), Jargon2.toByteArray("key1"));
 			ipmec.report();
 		} catch (Exception x) {
 			
@@ -629,7 +629,7 @@ public class Wilkins {
     		this.derivedKeyLength = derivedKeyLength;
     	}
     	
-    	public abstract ByteArray derive( ByteArray password, byte[] salt ) throws GeneralSecurityException;
+    	public abstract ByteArray derive( ByteArray password, ByteArray salt ) throws GeneralSecurityException;
     }
     
     protected static class ArgonDerivationStep extends DerivationStep {
@@ -642,7 +642,7 @@ public class Wilkins {
     	}
 
 		@Override
-		public ByteArray derive(ByteArray password, byte[] salt) {
+		public ByteArray derive(ByteArray password, ByteArray salt) {
 			return Jargon2.toByteArray( hasher.password(password).salt(salt).rawHash() );
 		}
     }
@@ -658,8 +658,8 @@ public class Wilkins {
 		}
 
 		@Override
-		public ByteArray derive(ByteArray password, byte[] salt) {
-			return Jargon2.toByteArray( bCrypt.crypt_raw(password.getBytes(), salt, rounds, BCrypt.getMagicNumbers() ) );
+		public ByteArray derive(ByteArray password, ByteArray salt) {
+			return Jargon2.toByteArray( bCrypt.crypt_raw(password.getBytes(), salt.getBytes(), rounds, BCrypt.getMagicNumbers() ) );
 		}
     }
     
@@ -676,19 +676,20 @@ public class Wilkins {
 		}
 
 		@Override
-		public ByteArray derive(ByteArray password, byte[] salt) throws GeneralSecurityException {
-			return Jargon2.toByteArray( SCrypt.scryptJ(password.getBytes(), salt, N, r, p, derivedKeyLength/8) );
+		public ByteArray derive(ByteArray password, ByteArray salt) throws GeneralSecurityException {
+			return Jargon2.toByteArray( SCrypt.scryptJ(password.getBytes(), salt.getBytes(), N, r, p, derivedKeyLength/8) );
 		}
     }
     
     protected ArrayList<DerivationStep> derivationSteps = new ArrayList<>();
     
-	public byte[] deriveKey( Hasher hasher, int derivedKeyLength, char[] password, byte[] salt) {
+	public byte[] deriveKey( ByteArray password, ByteArray salt) {
 		derivationSteps.clear();
-		ArgonDerivationStep argon = new ArgonDerivationStep(hasher, derivedKeyLength);
+		KeyDerivationParameters kdp = configuration.getKeyDerivationParameters();
+		ArgonDerivationStep argon = new ArgonDerivationStep(kdp.getArgonParameters().getHasher(salt), kdp.getKeySize());
 		derivationSteps.add(argon);
 		
-		ByteArray value  = Jargon2.toByteArray( password );
+		ByteArray value  =  password;
 		for (DerivationStep step : derivationSteps) {
 			try {
 				value = step.derive(value, salt);
