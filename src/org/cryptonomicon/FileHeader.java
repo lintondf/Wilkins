@@ -85,5 +85,38 @@ public class FileHeader extends EncryptableHeader {
 				BaseEncoding.base16().lowerCase().encode(getSalt().getBytes()) );
 				
 	}
+	
+//	File file = null;
+//	byte[] salt = new byte[256/8];
+//	// TODO from KDP
+//	FileHeader fileHeader = new FileHeader( Type.ARGON2i, Version.V10, 1024, 5, 256, salt );
+//	
+//	try {
+//		file = File.createTempFile("testFileHeader", "bin");
+//		RandomAccessFile raf = new RandomAccessFile( file, "rw" );
+//		raf.write( fileHeader.getPlainText(), 0, fileHeader.getPlainText().length);
+//		raf.seek(0L);
+//		
+////		FileHeader h2 = new FileHeader( raf );
+////		
+////		assertTrue( h2.isValid() );
+//////		assertTrue( h2.getType() == Type.ARGON2i);
+//////		assertTrue( h2.getVersion() == Version.V10 );
+//////		assertTrue( h2.getMemoryCost() == 1024 );
+//////		assertTrue( h2.getTimeCost() == 5 );
+//////		assertTrue( h2.getKeySize() == 256 );
+////		byte[] check = h2.getSalt();
+////		assertTrue( check != null && Arrays.equals(salt,  check) );
+//		
+//		raf.close();
+//	} catch (IOException e) {
+//		e.printStackTrace();
+//		fail( e.getMessage() );
+//	} finally {
+//		if (file != null) {
+//			file.delete();
+//		}
+//	}
+	
 
 }
