@@ -10,6 +10,7 @@ import java.util.Arrays;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.cryptonomicon.configuration.Configuration;
 import org.junit.Test;
 
 import com.google.common.io.BaseEncoding;
@@ -70,7 +71,7 @@ public class PayloadFileGuidanceTest {
 		g.setCipherText(expectedCipherText);
 		byte[] key = new byte[ipmec.hashLength];
 		SecretKey secretKey = new SecretKeySpec(key, "AES");
-		byte[] iv = new byte[Wilkins.AES_IV_BYTES];
+		byte[] iv = new byte[Configuration.AES_IV_BYTES];
 		g.decode(ipmec.getCipher(), secretKey, iv);
 		assertTrue( Arrays.equals( g.getPlainText(), expectedPlainText));
 	}
@@ -82,7 +83,7 @@ public class PayloadFileGuidanceTest {
 		g.setPlainText(expectedPlainText);
 		byte[] key = new byte[ipmec.hashLength];
 		SecretKey secretKey = new SecretKeySpec(key, "AES");
-		byte[] iv = new byte[Wilkins.AES_IV_BYTES];
+		byte[] iv = new byte[Configuration.AES_IV_BYTES];
 		g.encode(ipmec.getCipher(), secretKey, iv);
 		assertTrue( Arrays.equals( g.getCipherText(), expectedCipherText));
 	}

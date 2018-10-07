@@ -82,8 +82,6 @@ public class Wilkins {
 	protected long maxLength = 0L;
 	protected int fillerCount = 3;
 	
-	public static final int AES_IV_BYTES = 128/8;
-
 	protected int keyLength = 256;
 	
 	protected int hashLength = keyLength / 8;
@@ -560,7 +558,7 @@ public class Wilkins {
 //
 	public static void test_write(String[] args) {
 		Wilkins ipmec = new Wilkins();
-		byte[] iv = new byte[Wilkins.AES_IV_BYTES];
+		byte[] iv = new byte[Configuration.AES_IV_BYTES];
 		secureRandom.nextBytes(iv);
 
 		FileHeader fileHeader = new FileHeader(ipmec.parameters, Jargon2.toByteArray(iv) );
@@ -621,7 +619,7 @@ public class Wilkins {
 		System.out.println( toString(g.getPlainText() ) );
 		byte[] key = new byte[ipmec.hashLength];
 		SecretKey secretKey = new SecretKeySpec(key, "AES");
-		byte[] iv = new byte[Wilkins.AES_IV_BYTES];
+		byte[] iv = new byte[Configuration.AES_IV_BYTES];
 		g.encode(ipmec.getCipher(), secretKey, iv);
 		System.out.println( toString( g.getCipherText()) );
 		g.decode(ipmec.getCipher(), secretKey, iv);

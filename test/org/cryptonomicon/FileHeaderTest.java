@@ -159,7 +159,7 @@ public class FileHeaderTest {
 		random.nextBytes(saltArray);
 		ByteArray salt = Jargon2.toByteArray( saltArray );
 		FileHeader fh = new FileHeader( parameters, salt );
-		final int n = Wilkins.AES_IV_BYTES;
+		final int n = Configuration.AES_IV_BYTES;
 		for (int i = 0; i < saltArray.length-n; i++) {
 			byte[] iv = fh.getIV(i);
 			assertTrue( iv.length == n );

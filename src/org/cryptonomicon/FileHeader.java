@@ -79,7 +79,7 @@ public class FileHeader extends EncryptableHeader {
 	}
 
 	public byte[] getIV(int offset) {
-		return Arrays.copyOfRange(this.salt.getBytes(), offset, offset+Wilkins.AES_IV_BYTES);
+		return Arrays.copyOfRange(this.salt.getBytes(), offset, offset+Configuration.AES_IV_BYTES);
 	}
 	
 	public String toString() {
