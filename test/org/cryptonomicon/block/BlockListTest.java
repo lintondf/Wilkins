@@ -1,4 +1,4 @@
-package org.cryptonomicon;
+package org.cryptonomicon.block;
 
 import static org.junit.Assert.*;
 
@@ -6,6 +6,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.cryptonomicon.block.Block;
+import org.cryptonomicon.block.BlockList;
+import org.cryptonomicon.block.BlockListIterator;
 import org.junit.Test;
 
 public class BlockListTest {
@@ -22,7 +25,7 @@ public class BlockListTest {
 	public void testAdd() {
 		BlockList blockList = new BlockList();
 		Block block = new Block();
-		block.count = 10;
+		block.setCount(10);
 		blockList.add(block);
 		assertTrue( blockList.getList().size() == 1 );
 		assertTrue( blockList.size() == 1 );
@@ -36,11 +39,11 @@ public class BlockListTest {
 		BlockList blockList = new BlockList();
 		assertTrue( blockList.length() == 0 );
 		Block block = new Block();
-		block.count = 10;
+		block.setCount(10);
 		blockList.add(block);
 		assertTrue( blockList.length() == 10 );
 		block = new Block();
-		block.count = 20;
+		block.setCount(20);
 		blockList.add(block);
 		assertTrue( blockList.length() == 30 );
 	}
@@ -50,11 +53,11 @@ public class BlockListTest {
 		BlockList blockList = new BlockList();
 		assertTrue( blockList.size() == 0 );
 		Block block = new Block();
-		block.count = 10;
+		block.setCount(10);
 		blockList.add(block);
 		assertTrue( blockList.size() == 1 );
 		block = new Block();
-		block.count = 20;
+		block.setCount(20);
 		blockList.add(block);
 		assertTrue( blockList.size() == 2 );
 	}
@@ -66,21 +69,21 @@ public class BlockListTest {
 		BlockListIterator it = blockList.getIterator();
 		assertFalse( it.hasNext() );
 		Block block = new Block();
-		block.count = 10;
+		block.setCount(10);
 		blockList.add(block);
 		block = new Block();
-		block.count = 20;
+		block.setCount(20);
 		blockList.add(block);
 		block = new Block();
-		block.count = 30;
+		block.setCount(30);
 		blockList.add(block);
 		it = blockList.getIterator();
 		assertTrue( it.hasNext() );
-		assertTrue( it.next().count == 10 );
+		assertTrue( it.next().getCount() == 10 );
 		assertTrue( it.hasNext() );
-		assertTrue( it.next().count == 20 );
+		assertTrue( it.next().getCount() == 20 );
 		assertTrue( it.hasNext() );
-		assertTrue( it.next().count == 30 );
+		assertTrue( it.next().getCount() == 30 );
 		assertFalse( it.hasNext() );
 	}
 
@@ -91,15 +94,15 @@ public class BlockListTest {
 		BlockListIterator it = blockList.getIterator();
 		assertFalse( it.hasNext() );
 		Block block = new Block();
-		block.count = 10;
+		block.setCount(10);
 		blockList.add(block);
 		block = new Block();
-		block.count = 20;
+		block.setCount(20);
 		blockList.add(block);
 		block = new Block();
-		block.count = 30;
+		block.setCount(30);
 		blockList.add(block);
-		assertTrue( blockList.getFirst().count == 10);
+		assertTrue( blockList.getFirst().getCount() == 10);
 	}
 
 	@Test
@@ -109,15 +112,15 @@ public class BlockListTest {
 		BlockListIterator it = blockList.getIterator();
 		assertFalse( it.hasNext() );
 		Block block = new Block();
-		block.count = 10;
+		block.setCount(10);
 		blockList.add(block);
 		block = new Block();
-		block.count = 20;
+		block.setCount(20);
 		blockList.add(block);
 		block = new Block();
-		block.count = 30;
+		block.setCount(30);
 		blockList.add(block);
-		assertTrue( blockList.getLast().count == 30);
+		assertTrue( blockList.getLast().getCount() == 30);
 	}
 
 	@Test
@@ -132,28 +135,28 @@ public class BlockListTest {
 	public void testPad() {
 		BlockList blockList = new BlockList();
 		Block block = new Block();
-		block.count = 10;
+		block.setCount(10);
 		blockList.add(block);
 		block = new Block();
-		block.count = 20;
+		block.setCount(20);
 		blockList.add(block);
 		block = new Block();
-		block.count = 30;
+		block.setCount(30);
 		blockList.add(block);
 		assertTrue( blockList.size() == 3 );
 		BlockList.pad( blockList, 5);
 		assertTrue( blockList.size() == 5 );
 		BlockListIterator it = blockList.getIterator();
 		assertTrue( it.hasNext() );
-		assertTrue( it.next().count == 10 );
+		assertTrue( it.next().getCount() == 10 );
 		assertTrue( it.hasNext() );
-		assertTrue( it.next().count == 20 );
+		assertTrue( it.next().getCount() == 20 );
 		assertTrue( it.hasNext() );
-		assertTrue( it.next().count == 30 );
+		assertTrue( it.next().getCount() == 30 );
 		assertTrue( it.hasNext() );
-		assertTrue( it.next().count == Block.BLOCK_SIZE );
+		assertTrue( it.next().getCount() == Block.BLOCK_SIZE );
 		assertTrue( it.hasNext() );
-		assertTrue( it.next().count == Block.BLOCK_SIZE );
+		assertTrue( it.next().getCount() == Block.BLOCK_SIZE );
 		assertFalse( it.hasNext() );		
 	}
 
@@ -193,11 +196,11 @@ public class BlockListTest {
 		assertTrue( lo.size() == 3 );
 		Arrays.fill(array, (byte) (0x01 ^ 0x04 ^ 0x07) );
 		BlockListIterator it = lo.getIterator();
-		assertTrue( Arrays.equals(array, it.next().contents ) );
+		assertTrue( Arrays.equals(array, it.next().getContents() ) );
 		Arrays.fill(array, (byte) (0x02 ^ 0x05 ^ 0x08) );
-		assertTrue( Arrays.equals(array, it.next().contents ) );
+		assertTrue( Arrays.equals(array, it.next().getContents() ) );
 		Arrays.fill(array, (byte) (0x03 ^ 0x06 ^ 0x09) );
-		assertTrue( Arrays.equals(array, it.next().contents ) );
+		assertTrue( Arrays.equals(array, it.next().getContents() ) );
 	}
 
 	@Test
@@ -224,11 +227,11 @@ public class BlockListTest {
 		assertTrue( lo.size() == 3 );
 		Arrays.fill(array, (byte) (0x01 ^ 0x04) );
 		BlockListIterator it = lo.getIterator();
-		assertTrue( Arrays.equals(array, it.next().contents ) );
+		assertTrue( Arrays.equals(array, it.next().getContents() ) );
 		Arrays.fill(array, (byte) (0x02 ^ 0x05) );
-		assertTrue( Arrays.equals(array, it.next().contents ) );
+		assertTrue( Arrays.equals(array, it.next().getContents() ) );
 		Arrays.fill(array, (byte) (0x03 ^ 0x06) );
-		assertTrue( Arrays.equals(array, it.next().contents ) );
+		assertTrue( Arrays.equals(array, it.next().getContents() ) );
 	}
 
 }

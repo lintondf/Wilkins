@@ -17,13 +17,13 @@ import java.util.zip.InflaterOutputStream;
 
 import javax.crypto.CipherOutputStream;
 
-import org.cryptonomicon.Block;
-import org.cryptonomicon.BlockList;
-import org.cryptonomicon.BlockListIterator;
-import org.cryptonomicon.BlockReader;
-import org.cryptonomicon.BlockedFile;
 import org.cryptonomicon.PayloadFileGuidance;
 import org.cryptonomicon.Wilkins;
+import org.cryptonomicon.block.Block;
+import org.cryptonomicon.block.BlockList;
+import org.cryptonomicon.block.BlockListIterator;
+import org.cryptonomicon.block.BlockReader;
+import org.cryptonomicon.block.BlockedFile;
 
 /**
  * @author lintondf
@@ -75,7 +75,7 @@ public class ShuffledInterlaceMixer implements Mixer {
 			Block allButTarget = readers.get(fileModulus).getLast();
 			allXor = allXor.xor( allButTarget );
 			Wilkins.getLogger().log(Level.FINEST, String.format("%3d %3d  %8d / %s\n", iBlock, nBlocks, remaining, allXor.toString() ));
-			cos.write(allXor.contents, 0, (remaining > Block.BLOCK_SIZE) ? Block.BLOCK_SIZE : remaining );
+			cos.write(allXor.getContents(), 0, (remaining > Block.BLOCK_SIZE) ? Block.BLOCK_SIZE : remaining );
 			remaining -= Block.BLOCK_SIZE;
 		}
 		cos.close();
@@ -115,7 +115,7 @@ public class ShuffledInterlaceMixer implements Mixer {
 			for (BlockListIterator it : shuffled) {
 				Block block = it.next();
 				//if (iBlock >= 13 && iBlock <= 14) System.out.printf( "W%d,%d %s\n", iBlock, iterators.indexOf(it), block.toString() );
-				writer.write( block.contents, 0, Block.BLOCK_SIZE );
+				writer.write( block.getContents(), 0, Block.BLOCK_SIZE );
 				Wilkins.getLogger().log(Level.FINEST, String.format("%d,%d @ %d\n", iBlock, iterators.indexOf(it), writer.getFilePointer() ) );
 			}
 		}

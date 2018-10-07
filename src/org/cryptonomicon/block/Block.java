@@ -1,14 +1,16 @@
-package org.cryptonomicon;
+package org.cryptonomicon.block;
 
 import java.util.Arrays;
+
+import org.cryptonomicon.Wilkins;
 
 import com.google.common.io.BaseEncoding;
 
 public class Block {
 	public static final int BLOCK_SIZE = 1024;
 
-	public byte[] contents;
-	public int count;
+	private byte[] contents;
+	private int count;
 	
 	public Block() {
 		contents = new byte[BLOCK_SIZE];
@@ -27,7 +29,7 @@ public class Block {
 	public void pad() {
 		if (count < BLOCK_SIZE) {
 			byte[] padding = new byte[BLOCK_SIZE-count];
-			Wilkins.secureRandom.nextBytes(padding);
+			Wilkins.getSecureRandom().nextBytes(padding);
 			for (int i = 0; i < padding.length; i++) {
 				contents[count+i] = padding[i];
 			}
@@ -47,6 +49,34 @@ public class Block {
 		return String.format("%4d: %s", count, BaseEncoding.base16().lowerCase().encode(Arrays.copyOf(contents, count)));
 	}
 	
+	/**
+	 * @return the count
+	 */
+	public int getCount() {
+		return count;
+	}
+
+	/**
+	 * @param count the count to set
+	 */
+    public void setCount(int count) {
+		this.count = count;
+	}
+
+	/**
+	 * @return the contents
+	 */
+	public byte[] getContents() {
+		return contents;
+	}
+
+	/**
+	 * @param contents the contents to set 
+	 */
+	public void setContents(byte[] contents) {
+		this.contents = contents;
+	}
+
 	public static void main(String[] args) {
 		BlockList blocks = new BlockList();
 		Block block = new Block();

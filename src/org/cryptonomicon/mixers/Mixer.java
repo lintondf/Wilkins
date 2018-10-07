@@ -13,8 +13,8 @@ import java.util.Random;
 
 import javax.crypto.CipherOutputStream;
 
-import org.cryptonomicon.BlockedFile;
 import org.cryptonomicon.PayloadFileGuidance;
+import org.cryptonomicon.block.BlockedFile;
 
 /**
  * @author lintondf

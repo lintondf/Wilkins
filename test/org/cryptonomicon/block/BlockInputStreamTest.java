@@ -1,12 +1,15 @@
 /**
  * 
  */
-package org.cryptonomicon;
+package org.cryptonomicon.block;
 
 import static org.junit.Assert.*;
 
 import java.util.Arrays;
 
+import org.cryptonomicon.block.Block;
+import org.cryptonomicon.block.BlockInputStream;
+import org.cryptonomicon.block.BlockList;
 import org.junit.Test;
 
 /**
@@ -16,7 +19,7 @@ import org.junit.Test;
 public class BlockInputStreamTest {
 
 	/**
-	 * Test method for {@link org.cryptonomicon.BlockInputStream#read()}.
+	 * Test method for {@link org.cryptonomicon.block.BlockInputStream#read()}.
 	 */
 	@Test
 	public void testRead() {

@@ -59,7 +59,7 @@ public class PayloadFileGuidance extends EncryptableHeader {
 			bos.write( Longs.toByteArray(seed) );     // 6 ..13  8 bytes
 			bos.write( Ints.toByteArray(length) );    //14 ..17  4 bytes
 			byte[] filler = new byte[10];             //18 ..27  10 bytes
-			Wilkins.secureRandom.nextBytes(filler);
+			Wilkins.getSecureRandom().nextBytes(filler);
 			bos.write( filler );
 			plainText = bos.toByteArray();             // 28 bytes
 			

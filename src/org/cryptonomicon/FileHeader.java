@@ -36,7 +36,7 @@ public class FileHeader extends EncryptableHeader {
 			parameters.write(bos);
 			bos.write( Arrays.copyOf(salt.getBytes(),  parameters.getKeySize()/8 ) ); 
 			byte[] filler = new byte[SIZE - bos.size()];       
-			Wilkins.secureRandom.nextBytes(filler);
+			Wilkins.getSecureRandom().nextBytes(filler);
 			bos.write( filler );
 			plainText = bos.toByteArray();
 		} catch (IOException e) {

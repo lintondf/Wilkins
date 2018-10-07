@@ -5,6 +5,10 @@ package org.cryptonomicon;
 
 import java.util.ArrayList;
 
+import org.cryptonomicon.block.BlockList;
+import org.cryptonomicon.block.BlockListIterator;
+import org.cryptonomicon.block.BlockedFile;
+
 /**
  * @author lintondf
  *

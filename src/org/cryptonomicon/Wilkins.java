@@ -33,6 +33,7 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.cryptonomicon.block.BlockedFile;
 import org.cryptonomicon.configuration.Configuration;
 import org.cryptonomicon.configuration.KeyDerivationParameters;
 import org.cryptonomicon.configuration.KeyDerivationParameters.ArgonParameters;
@@ -434,8 +435,15 @@ public class Wilkins {
 	}
 	
 	
+	/**
+	 * @return the secureRandom
+	 */
+	public static SecureRandom getSecureRandom() {
+		return secureRandom;
+	}
+
 	private static Random baseRandom = new Random();
-	protected static SecureRandom secureRandom = new SecureRandom();
+	private static SecureRandom secureRandom = new SecureRandom();
 
 	/**
 	 * @param args

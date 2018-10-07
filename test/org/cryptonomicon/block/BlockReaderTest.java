@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.cryptonomicon;
+package org.cryptonomicon.block;
 
 import static org.junit.Assert.*;
 
@@ -10,6 +10,8 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.Arrays;
 
+import org.cryptonomicon.block.Block;
+import org.cryptonomicon.block.BlockReader;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,13 +36,13 @@ public class BlockReaderTest {
 			raf = new RandomAccessFile( file, "rw" );
 			Block block = new Block();
 			for (int i = 0; i < 5; i++) {
-				block.count = Block.BLOCK_SIZE;
-				Arrays.fill(block.contents, (byte) i );
-				raf.write(block.contents, 0, block.count );
+				block.setCount(Block.BLOCK_SIZE);
+				Arrays.fill(block.getContents(), (byte) i );
+				raf.write(block.getContents(), 0, block.getCount() );
 			}
-			block.count = 100;
-			Arrays.fill(block.contents, (byte) 10 );
-			raf.write(block.contents, 0, block.count );
+			block.setCount(100);
+			Arrays.fill(block.getContents(), (byte) 10 );
+			raf.write(block.getContents(), 0, block.getCount() );
 			length = raf.getFilePointer();
 		} catch (Exception x) {
 			x.printStackTrace();
@@ -59,7 +61,7 @@ public class BlockReaderTest {
 	}
 
 	/**
-	 * Test method for {@link org.cryptonomicon.BlockReader#read()}.
+	 * Test method for {@link org.cryptonomicon.block.BlockReader#read()}.
 	 */
 	@Test
 	public void testRead() {
@@ -69,10 +71,10 @@ public class BlockReaderTest {
 			Block block = blockReader.read();
 			int iBlock = 0;
 			byte[] check = new byte[Block.BLOCK_SIZE];
-			while (block.count > 0) {
+			while (block.getCount() > 0) {
 				Arrays.fill(check, (byte) ((iBlock < 5) ? iBlock : 10) );
-				assertTrue( block.count == ((iBlock < 5) ? Block.BLOCK_SIZE : 100) );
-				assertTrue( Arrays.equals(Arrays.copyOf(check, block.count), Arrays.copyOf(block.contents, block.count)));
+				assertTrue( block.getCount() == ((iBlock < 5) ? Block.BLOCK_SIZE : 100) );
+				assertTrue( Arrays.equals(Arrays.copyOf(check, block.getCount()), Arrays.copyOf(block.getContents(), block.getCount())));
 				Block b2 = blockReader.getLast();
 				assertTrue( b2 == block);
 				block = blockReader.read();
@@ -83,11 +85,11 @@ public class BlockReaderTest {
 			raf.seek(0);
 			blockReader = new BlockReader( raf, 10 );
 			block = blockReader.read();
-			assertTrue(block.count == 10);
+			assertTrue(block.getCount() == 10);
 			Arrays.fill(check, (byte) 0x00 );
-			assertTrue( Arrays.equals(Arrays.copyOf(check, block.count), Arrays.copyOf(block.contents, block.count)));
+			assertTrue( Arrays.equals(Arrays.copyOf(check, block.getCount()), Arrays.copyOf(block.getContents(), block.getCount())));
 			block = blockReader.read();
-			assertTrue(block.count == 0);
+			assertTrue(block.getCount() == 0);
 			
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -96,7 +98,7 @@ public class BlockReaderTest {
 	}
 
 	/**
-	 * Test method for {@link org.cryptonomicon.BlockReader#readFull()}.
+	 * Test method for {@link org.cryptonomicon.block.BlockReader#readFull()}.
 	 */
 	@Test
 	public void testReadFull() {
@@ -106,10 +108,10 @@ public class BlockReaderTest {
 			Block block = blockReader.readFull();
 			int iBlock = 0;
 			byte[] check = new byte[Block.BLOCK_SIZE];
-			while (block != null && block.count > 0) {
+			while (block != null && block.getCount() > 0) {
 				Arrays.fill(check, (byte) ((iBlock < 5) ? iBlock : 10) );
-				assertTrue( block.count == ((iBlock < 5) ? Block.BLOCK_SIZE : 100) );
-				assertTrue( Arrays.equals(Arrays.copyOf(check, block.count), Arrays.copyOf(block.contents, block.count)));
+				assertTrue( block.getCount() == ((iBlock < 5) ? Block.BLOCK_SIZE : 100) );
+				assertTrue( Arrays.equals(Arrays.copyOf(check, block.getCount()), Arrays.copyOf(block.getContents(), block.getCount())));
 				Block b2 = blockReader.getLast();
 				assertTrue( b2 == block);
 				block = blockReader.readFull();
@@ -120,9 +122,9 @@ public class BlockReaderTest {
 			raf.seek(0);
 			blockReader = new BlockReader( raf, 10 );
 			block = blockReader.readFull();
-			assertTrue(block.count == Block.BLOCK_SIZE);
+			assertTrue(block.getCount() == Block.BLOCK_SIZE);
 			Arrays.fill(check, (byte) 0x00 );
-			assertTrue( Arrays.equals(Arrays.copyOf(check, block.count), Arrays.copyOf(block.contents, block.count)));
+			assertTrue( Arrays.equals(Arrays.copyOf(check, block.getCount()), Arrays.copyOf(block.getContents(), block.getCount())));
 			
 		} catch (IOException e) {
 			e.printStackTrace();

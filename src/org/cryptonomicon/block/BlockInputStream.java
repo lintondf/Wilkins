@@ -1,4 +1,4 @@
-package org.cryptonomicon;
+package org.cryptonomicon.block;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,16 +26,16 @@ public class BlockInputStream extends InputStream {
 				return -1;
 			}
 		}
-		if (i >= block.count)
+		if (i >= block.getCount())
 			return -1;
-		return 0xFF & ((int) block.contents[i++]);
+		return 0xFF & ((int) block.getContents()[i++]);
 	}
 
 
 	@Override
 	public int available() throws IOException {
 		if (block != null)
-			return (it.hasNext()) ? Block.BLOCK_SIZE : block.count - i;
+			return (it.hasNext()) ? Block.BLOCK_SIZE : block.getCount() - i;
 		else if (it.hasNext())
 			return Block.BLOCK_SIZE;
 		else

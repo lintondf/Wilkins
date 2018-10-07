@@ -14,6 +14,8 @@ import java.util.Arrays;
 import java.util.Random;
 
 import org.apache.commons.io.IOUtils;
+import org.cryptonomicon.block.Block;
+import org.cryptonomicon.block.BlockedFile;
 import org.cryptonomicon.mixers.ShuffledInterlaceMixer;
 import org.junit.Test;
 
@@ -62,9 +64,9 @@ public class ShuffledInterlaceMixerTest {
 			FileOutputStream fos = new FileOutputStream( new File(testFileName) );
 			for (String input : inputs) {
 				Block block = new Block();
-				block.contents = Arrays.copyOf(toBytes(input), Block.BLOCK_SIZE);
-				block.count = Block.BLOCK_SIZE;
-				fos.write( block.contents );
+				block.setContents(Arrays.copyOf(toBytes(input), Block.BLOCK_SIZE));
+				block.setCount(Block.BLOCK_SIZE);
+				fos.write( block.getContents() );
 			}
 			fos.close();
 		} catch (IOException e) {

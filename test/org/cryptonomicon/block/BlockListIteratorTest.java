@@ -1,7 +1,10 @@
-package org.cryptonomicon;
+package org.cryptonomicon.block;
 
 import static org.junit.Assert.*;
 
+import org.cryptonomicon.block.Block;
+import org.cryptonomicon.block.BlockList;
+import org.cryptonomicon.block.BlockListIterator;
 import org.junit.Test;
 
 public class BlockListIteratorTest {
@@ -10,23 +13,23 @@ public class BlockListIteratorTest {
 	public void testBlockListIterator() {
 		BlockList blockList = new BlockList();
 		Block block = new Block();
-		block.count = 10;
+		block.setCount(10);
 		blockList.add(block);
 		block = new Block();
-		block.count = 20;
+		block.setCount(20);
 		blockList.add(block);
 		block = new Block();
-		block.count = 30;
+		block.setCount(30);
 		blockList.add(block);
 		
 		BlockListIterator it = new BlockListIterator( blockList.getList().iterator() );
 		
 		assertTrue( it.hasNext() );
-		assertTrue( it.next().count == 10 );
+		assertTrue( it.next().getCount() == 10 );
 		assertTrue( it.hasNext() );
-		assertTrue( it.next().count == 20 );
+		assertTrue( it.next().getCount() == 20 );
 		assertTrue( it.hasNext() );
-		assertTrue( it.next().count == 30 );
+		assertTrue( it.next().getCount() == 30 );
 		assertFalse( it.hasNext() );
 	}
 
@@ -34,26 +37,26 @@ public class BlockListIteratorTest {
 	public void testCurrent() {
 		BlockList blockList = new BlockList();
 		Block block = new Block();
-		block.count = 10;
+		block.setCount(10);
 		blockList.add(block);
 		block = new Block();
-		block.count = 20;
+		block.setCount(20);
 		blockList.add(block);
 		block = new Block();
-		block.count = 30;
+		block.setCount(30);
 		blockList.add(block);
 		
 		BlockListIterator it = new BlockListIterator( blockList.getList().iterator() );
 		
 		assertTrue( it.hasNext() );
-		assertTrue( it.next().count == 10 );
-		assertTrue( it.current().count == 10 );
+		assertTrue( it.next().getCount() == 10 );
+		assertTrue( it.current().getCount() == 10 );
 		assertTrue( it.hasNext() );
-		assertTrue( it.next().count == 20 );
-		assertTrue( it.current().count == 20 );
+		assertTrue( it.next().getCount() == 20 );
+		assertTrue( it.current().getCount() == 20 );
 		assertTrue( it.hasNext() );
-		assertTrue( it.next().count == 30 );
-		assertTrue( it.current().count == 30 );
+		assertTrue( it.next().getCount() == 30 );
+		assertTrue( it.current().getCount() == 30 );
 		assertFalse( it.hasNext() );
 	}
 

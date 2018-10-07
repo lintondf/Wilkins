@@ -1,7 +1,9 @@
-package org.cryptonomicon;
+package org.cryptonomicon.block;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import org.cryptonomicon.Wilkins;
 
 public class BlockList {
 	
@@ -19,7 +21,7 @@ public class BlockList {
 	public int length() {
 		int n = 0;
 		for (Block block : list) {
-			n += block.count;
+			n += block.getCount();
 		}
 		return n;
 	}
@@ -50,8 +52,8 @@ public class BlockList {
 		int m = blocks.size();
 		for (int i = m; i < n; i++) {
 			Block block = new Block();
-			Wilkins.secureRandom.nextBytes(block.contents);
-			block.count = block.contents.length;
+			Wilkins.getSecureRandom().nextBytes(block.getContents());
+			block.setCount(block.getContents().length);
 			blocks.add( block );
 		}
 	}

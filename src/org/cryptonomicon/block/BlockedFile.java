@@ -1,7 +1,7 @@
 /*
  * 
  */
-package org.cryptonomicon;
+package org.cryptonomicon.block;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
@@ -116,7 +116,7 @@ public class BlockedFile {
 	 * @param contents the contents
 	 * @param key the cryptographic key
 	 */
-	protected BlockedFile( byte[] contents, ByteArray key ) {
+	public BlockedFile( byte[] contents, ByteArray key ) {
 		this();
 		file = null;
 		secretKey = new SecretKeySpec(key.getBytes(), "AES");
@@ -135,6 +135,7 @@ public class BlockedFile {
 	public void pad(int count) {
 		blocks.getList().get(blocks.getList().size() - 1).pad();
 		BlockList.pad(blocks, count);
+		length = Block.BLOCK_SIZE * count;
 	}
 	
 	/**
@@ -205,11 +206,11 @@ public class BlockedFile {
 			// Compress the data
 			while (true) {
 				Block block = new Block();
-				int length = bis.read(block.contents);
+				int length = bis.read(block.getContents());
 				if (length < 0)
 					break;
 				if (length > 0) {
-					block.count = length;
+					block.setCount(length);
 					blocks.add(block);
 				}
 				if (blockLimit > 0 && blocks.size() >= blockLimit) {
@@ -241,13 +242,13 @@ public class BlockedFile {
 			BlockListIterator it = blocks.getIterator();
 			if (it.hasNext()) {
 				Block block = it.next();
-				inflater.setInput(block.contents, 0, block.count);
+				inflater.setInput(block.getContents(), 0, block.getCount());
 				byte[] result = new byte[1024*1024];
 				int resultLength = inflater.inflate(result, 0, result.length);
 				fos.write(result, 0, resultLength);
 				while (it.hasNext()) {
 					block = it.next();
-					inflater.setInput(block.contents, 0, block.count);
+					inflater.setInput(block.getContents(), 0, block.getCount());
 					resultLength = inflater.inflate(result, 0, result.length);
 					fos.write(result, 0, resultLength);
 				}
@@ -276,16 +277,16 @@ public class BlockedFile {
 			BlockList output = new BlockList();
 			Block block = new Block();
 			while (true) {
-				int length = cis.read(block.contents, block.count, Block.BLOCK_SIZE - block.count );
+				int length = cis.read(block.getContents(), block.getCount(), Block.BLOCK_SIZE - block.getCount() );
 				if (length < 0)
 					break;
-				block.count += length;
-				if (block.count >= Block.BLOCK_SIZE) {
+				block.setCount(block.getCount() + length);
+				if (block.getCount() >= Block.BLOCK_SIZE) {
 					output.add(block);
 					block = new Block();
 				}
 			}
-			if (block.count > 0) {
+			if (block.getCount() > 0) {
 				output.add(block);				
 			}
 			blocks = output;

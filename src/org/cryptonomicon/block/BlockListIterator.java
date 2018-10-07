@@ -1,4 +1,4 @@
-package org.cryptonomicon;
+package org.cryptonomicon.block;
 
 import java.util.Iterator;
 
