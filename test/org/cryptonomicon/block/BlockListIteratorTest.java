@@ -2,7 +2,7 @@ package org.cryptonomicon.block;
 
 import static org.junit.Assert.*;
 
-import org.cryptonomicon.block.Block;
+import org.cryptonomicon.block.AllocatedBlock;
 import org.cryptonomicon.block.BlockList;
 import org.cryptonomicon.block.BlockListIterator;
 import org.junit.Test;
@@ -12,13 +12,13 @@ public class BlockListIteratorTest {
 	@Test
 	public void testBlockListIterator() {
 		BlockList blockList = new BlockList();
-		Block block = new Block();
+		AllocatedBlock block = new AllocatedBlock();
 		block.setCount(10);
 		blockList.add(block);
-		block = new Block();
+		block = new AllocatedBlock();
 		block.setCount(20);
 		blockList.add(block);
-		block = new Block();
+		block = new AllocatedBlock();
 		block.setCount(30);
 		blockList.add(block);
 		
@@ -36,13 +36,13 @@ public class BlockListIteratorTest {
 	@Test
 	public void testCurrent() {
 		BlockList blockList = new BlockList();
-		Block block = new Block();
+		AllocatedBlock block = new AllocatedBlock();
 		block.setCount(10);
 		blockList.add(block);
-		block = new Block();
+		block = new AllocatedBlock();
 		block.setCount(20);
 		blockList.add(block);
-		block = new Block();
+		block = new AllocatedBlock();
 		block.setCount(30);
 		blockList.add(block);
 		

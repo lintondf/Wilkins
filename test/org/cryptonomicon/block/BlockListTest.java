@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.cryptonomicon.block.Block;
+import org.cryptonomicon.block.AllocatedBlock;
 import org.cryptonomicon.block.BlockList;
 import org.cryptonomicon.block.BlockListIterator;
 import org.junit.Test;
@@ -24,7 +24,7 @@ public class BlockListTest {
 	@Test
 	public void testAdd() {
 		BlockList blockList = new BlockList();
-		Block block = new Block();
+		AllocatedBlock block = new AllocatedBlock();
 		block.setCount(10);
 		blockList.add(block);
 		assertTrue( blockList.getList().size() == 1 );
@@ -38,11 +38,11 @@ public class BlockListTest {
 	public void testLength() {
 		BlockList blockList = new BlockList();
 		assertTrue( blockList.length() == 0 );
-		Block block = new Block();
+		AllocatedBlock block = new AllocatedBlock();
 		block.setCount(10);
 		blockList.add(block);
 		assertTrue( blockList.length() == 10 );
-		block = new Block();
+		block = new AllocatedBlock();
 		block.setCount(20);
 		blockList.add(block);
 		assertTrue( blockList.length() == 30 );
@@ -52,11 +52,11 @@ public class BlockListTest {
 	public void testSize() {
 		BlockList blockList = new BlockList();
 		assertTrue( blockList.size() == 0 );
-		Block block = new Block();
+		AllocatedBlock block = new AllocatedBlock();
 		block.setCount(10);
 		blockList.add(block);
 		assertTrue( blockList.size() == 1 );
-		block = new Block();
+		block = new AllocatedBlock();
 		block.setCount(20);
 		blockList.add(block);
 		assertTrue( blockList.size() == 2 );
@@ -68,13 +68,13 @@ public class BlockListTest {
 		assertTrue( blockList.size() == 0 );
 		BlockListIterator it = blockList.getIterator();
 		assertFalse( it.hasNext() );
-		Block block = new Block();
+		AllocatedBlock block = new AllocatedBlock();
 		block.setCount(10);
 		blockList.add(block);
-		block = new Block();
+		block = new AllocatedBlock();
 		block.setCount(20);
 		blockList.add(block);
-		block = new Block();
+		block = new AllocatedBlock();
 		block.setCount(30);
 		blockList.add(block);
 		it = blockList.getIterator();
@@ -93,13 +93,13 @@ public class BlockListTest {
 		assertTrue( blockList.size() == 0 );
 		BlockListIterator it = blockList.getIterator();
 		assertFalse( it.hasNext() );
-		Block block = new Block();
+		AllocatedBlock block = new AllocatedBlock();
 		block.setCount(10);
 		blockList.add(block);
-		block = new Block();
+		block = new AllocatedBlock();
 		block.setCount(20);
 		blockList.add(block);
-		block = new Block();
+		block = new AllocatedBlock();
 		block.setCount(30);
 		blockList.add(block);
 		assertTrue( blockList.getFirst().getCount() == 10);
@@ -111,13 +111,13 @@ public class BlockListTest {
 		assertTrue( blockList.size() == 0 );
 		BlockListIterator it = blockList.getIterator();
 		assertFalse( it.hasNext() );
-		Block block = new Block();
+		AllocatedBlock block = new AllocatedBlock();
 		block.setCount(10);
 		blockList.add(block);
-		block = new Block();
+		block = new AllocatedBlock();
 		block.setCount(20);
 		blockList.add(block);
-		block = new Block();
+		block = new AllocatedBlock();
 		block.setCount(30);
 		blockList.add(block);
 		assertTrue( blockList.getLast().getCount() == 30);
@@ -126,7 +126,7 @@ public class BlockListTest {
 	@Test
 	public void testGetList() {
 		BlockList blockList = new BlockList();
-		List<AbstractBlock> list = blockList.getList();
+		List<Block> list = blockList.getList();
 		assertTrue( list != null );
 		assertTrue( list.size() == 0 );
 	}
@@ -134,13 +134,13 @@ public class BlockListTest {
 	@Test
 	public void testPad() {
 		BlockList blockList = new BlockList();
-		Block block = new Block();
+		AllocatedBlock block = new AllocatedBlock();
 		block.setCount(10);
 		blockList.add(block);
-		block = new Block();
+		block = new AllocatedBlock();
 		block.setCount(20);
 		blockList.add(block);
-		block = new Block();
+		block = new AllocatedBlock();
 		block.setCount(30);
 		blockList.add(block);
 		assertTrue( blockList.size() == 3 );
@@ -154,38 +154,38 @@ public class BlockListTest {
 		assertTrue( it.hasNext() );
 		assertTrue( it.next().getCount() == 30 );
 		assertTrue( it.hasNext() );
-		assertTrue( it.next().getCount() == AbstractBlock.BLOCK_SIZE );
+		assertTrue( it.next().getCount() == Block.BLOCK_SIZE );
 		assertTrue( it.hasNext() );
-		assertTrue( it.next().getCount() == AbstractBlock.BLOCK_SIZE );
+		assertTrue( it.next().getCount() == Block.BLOCK_SIZE );
 		assertFalse( it.hasNext() );		
 	}
 
 	@Test
 	public void testXorListOfBlockList() {
-		byte[] array = new byte[AbstractBlock.BLOCK_SIZE];
+		byte[] array = new byte[Block.BLOCK_SIZE];
 		BlockList l1 = new BlockList();
 		Arrays.fill(array, (byte) 0x01 );
-		l1.add( new Block(array) );
+		l1.add( new AllocatedBlock(array) );
 		Arrays.fill(array, (byte) 0x02 );
-		l1.add( new Block(array) );
+		l1.add( new AllocatedBlock(array) );
 		Arrays.fill(array, (byte) 0x03 );
-		l1.add( new Block(array) );
+		l1.add( new AllocatedBlock(array) );
 		
 		BlockList l2 = new BlockList();
 		Arrays.fill(array, (byte) 0x04 );
-		l2.add( new Block(array) );
+		l2.add( new AllocatedBlock(array) );
 		Arrays.fill(array, (byte) 0x05 );
-		l2.add( new Block(array) );
+		l2.add( new AllocatedBlock(array) );
 		Arrays.fill(array, (byte) 0x06 );
-		l2.add( new Block(array) );
+		l2.add( new AllocatedBlock(array) );
 		
 		BlockList l3 = new BlockList();
 		Arrays.fill(array, (byte) 0x07 );
-		l3.add( new Block(array) );
+		l3.add( new AllocatedBlock(array) );
 		Arrays.fill(array, (byte) 0x08 );
-		l3.add( new Block(array) );
+		l3.add( new AllocatedBlock(array) );
 		Arrays.fill(array, (byte) 0x09 );
-		l3.add( new Block(array) );
+		l3.add( new AllocatedBlock(array) );
 		
 		List<BlockList> all = new ArrayList<>();
 		all.add(l1);
@@ -205,22 +205,22 @@ public class BlockListTest {
 
 	@Test
 	public void testXorBlockListBlockList() {
-		byte[] array = new byte[AbstractBlock.BLOCK_SIZE];
+		byte[] array = new byte[Block.BLOCK_SIZE];
 		BlockList l1 = new BlockList();
 		Arrays.fill(array, (byte) 0x01 );
-		l1.add( new Block(array) );
+		l1.add( new AllocatedBlock(array) );
 		Arrays.fill(array, (byte) 0x02 );
-		l1.add( new Block(array) );
+		l1.add( new AllocatedBlock(array) );
 		Arrays.fill(array, (byte) 0x03 );
-		l1.add( new Block(array) );
+		l1.add( new AllocatedBlock(array) );
 		
 		BlockList l2 = new BlockList();
 		Arrays.fill(array, (byte) 0x04 );
-		l2.add( new Block(array) );
+		l2.add( new AllocatedBlock(array) );
 		Arrays.fill(array, (byte) 0x05 );
-		l2.add( new Block(array) );
+		l2.add( new AllocatedBlock(array) );
 		Arrays.fill(array, (byte) 0x06 );
-		l2.add( new Block(array) ); 
+		l2.add( new AllocatedBlock(array) ); 
 		
 		BlockList lo = BlockList.xor( l1, l2 );
 		

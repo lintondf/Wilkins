@@ -6,16 +6,16 @@ import java.io.RandomAccessFile;
 public class BlockReader {
 	RandomAccessFile    raf;
 	long                remaining;
-	Block               current;
+	AllocatedBlock               current;
 	
 	public BlockReader( RandomAccessFile file, long length ) {
 		this.raf = file;
 		this.remaining = length;
 	}
 	
-	public Block read() throws IOException {
-		current = new Block();
-		long n = (remaining > AbstractBlock.BLOCK_SIZE) ? AbstractBlock.BLOCK_SIZE : remaining;
+	public AllocatedBlock read() throws IOException {
+		current = new AllocatedBlock();
+		long n = (remaining > Block.BLOCK_SIZE) ? Block.BLOCK_SIZE : remaining;
 		current.setCount(raf.read( current.getContents(), 0, (int) n ));
 		if (current.getCount() < 0)
 			current = null;
@@ -23,16 +23,16 @@ public class BlockReader {
 		return current;
 	}
 	
-	public Block readFull() throws IOException {
-		current = new Block();
-		current.setCount(raf.read( current.getContents(), 0, AbstractBlock.BLOCK_SIZE ));
+	public AllocatedBlock readFull() throws IOException {
+		current = new AllocatedBlock();
+		current.setCount(raf.read( current.getContents(), 0, Block.BLOCK_SIZE ));
 		if (current.getCount() < 0)
 			current = null;
-		remaining -= AbstractBlock.BLOCK_SIZE;
+		remaining -= Block.BLOCK_SIZE;
 		return current;
 	}
 	
-	public Block getLast() {
+	public AllocatedBlock getLast() {
 		return current;
 	}
 }

@@ -65,7 +65,7 @@ public class BlockedFileTest {
 		BlockedFile bf = new BlockedFile( salt, 2 );
 		assertTrue( bf.file == null );
 		assertTrue( Arrays.equals( bf.secretKey.getEncoded(), salt.getBytes() ) );
-		assertTrue( bf.length == 2 * AbstractBlock.BLOCK_SIZE );
+		assertTrue( bf.length == 2 * Block.BLOCK_SIZE );
 		assertTrue( bf.blocks != null && bf.blocks.size() == 2 );
 		assertTrue( bf.state == State.RAW );
 	}
@@ -78,7 +78,7 @@ public class BlockedFileTest {
 		ByteArray salt = Jargon2.toByteArray(new byte[32]);
 		BlockedFile bf = new BlockedFile( salt, 2 );
 		bf.pad(3);
-		assertTrue( bf.length == 3 * AbstractBlock.BLOCK_SIZE );
+		assertTrue( bf.length == 3 * Block.BLOCK_SIZE );
 		assertTrue( bf.blocks != null && bf.blocks.size() == 3 );
 	}
 
@@ -108,7 +108,7 @@ public class BlockedFileTest {
 		try {
 			file = File.createTempFile("testFileHeader", "bin");
 			RandomAccessFile raf = new RandomAccessFile( file, "rw" );
-			byte[] block = new byte[AbstractBlock.BLOCK_SIZE];
+			byte[] block = new byte[Block.BLOCK_SIZE];
 			for (int i = 0; i < 3; i++) {
 				Arrays.fill( block, (byte) i );
 				raf.write(block);

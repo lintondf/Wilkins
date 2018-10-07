@@ -104,7 +104,7 @@ public class BlockedFile {
 		this();
 		file = null;
 		secretKey = new SecretKeySpec(key.getBytes(), "AES");
-		length = nBlocks * AbstractBlock.BLOCK_SIZE;
+		length = nBlocks * Block.BLOCK_SIZE;
 		blocks = new BlockList();
 		BlockList.pad(blocks, nBlocks);
 		state = State.RAW;
@@ -122,7 +122,7 @@ public class BlockedFile {
 		secretKey = new SecretKeySpec(key.getBytes(), "AES");
 		length = contents.length;
 		blocks = new BlockList();
-		Block block = new Block(contents);
+		AllocatedBlock block = new AllocatedBlock(contents);
 		blocks.add(block);
 		state = State.RAW;
 	}
@@ -135,7 +135,7 @@ public class BlockedFile {
 	public void pad(int count) {
 		blocks.getList().get(blocks.getList().size() - 1).pad();
 		BlockList.pad(blocks, count);
-		length = AbstractBlock.BLOCK_SIZE * count;
+		length = Block.BLOCK_SIZE * count;
 	}
 	
 	/**
@@ -205,7 +205,7 @@ public class BlockedFile {
 
 			// Compress the data
 			while (true) {
-				Block block = new Block();
+				AllocatedBlock block = new AllocatedBlock();
 				int length = bis.read(block.getContents());
 				if (length < 0)
 					break;
@@ -241,7 +241,7 @@ public class BlockedFile {
 			Inflater inflater = new Inflater();
 			BlockListIterator it = blocks.getIterator();
 			if (it.hasNext()) {
-				AbstractBlock block = it.next();
+				Block block = it.next();
 				inflater.setInput(block.getContents(), 0, block.getCount());
 				byte[] result = new byte[1024*1024];
 				int resultLength = inflater.inflate(result, 0, result.length);
@@ -275,15 +275,15 @@ public class BlockedFile {
 			BlockInputStream bis = new BlockInputStream(blocks);
 			CipherInputStream cis = new CipherInputStream( bis, cipher );
 			BlockList output = new BlockList();
-			Block block = new Block();
+			AllocatedBlock block = new AllocatedBlock();
 			while (true) {
-				int length = cis.read(block.getContents(), block.getCount(), AbstractBlock.BLOCK_SIZE - block.getCount() );
+				int length = cis.read(block.getContents(), block.getCount(), Block.BLOCK_SIZE - block.getCount() );
 				if (length < 0)
 					break;
 				block.setCount(block.getCount() + length);
-				if (block.getCount() >= AbstractBlock.BLOCK_SIZE) {
+				if (block.getCount() >= Block.BLOCK_SIZE) {
 					output.add(block);
-					block = new Block();
+					block = new AllocatedBlock();
 				}
 			}
 			if (block.getCount() > 0) {

@@ -7,8 +7,8 @@ public class BlockInputStream extends InputStream {
 	
 	protected BlockList blocks;
 	protected BlockListIterator it;
-	protected AbstractBlock block;
-	protected int i = AbstractBlock.BLOCK_SIZE;
+	protected Block block;
+	protected int i = Block.BLOCK_SIZE;
 	
 	public BlockInputStream( BlockList blocks ) {
 		this.blocks = blocks;
@@ -18,7 +18,7 @@ public class BlockInputStream extends InputStream {
 	
 	@Override
 	public int read() throws IOException {
-		if (i >= AbstractBlock.BLOCK_SIZE) {
+		if (i >= Block.BLOCK_SIZE) {
 			if (it.hasNext()) {
 				block = it.next();
 				i = 0;
@@ -35,9 +35,9 @@ public class BlockInputStream extends InputStream {
 	@Override
 	public int available() throws IOException {
 		if (block != null)
-			return (it.hasNext()) ? AbstractBlock.BLOCK_SIZE : block.getCount() - i;
+			return (it.hasNext()) ? Block.BLOCK_SIZE : block.getCount() - i;
 		else if (it.hasNext())
-			return AbstractBlock.BLOCK_SIZE;
+			return Block.BLOCK_SIZE;
 		else
 			return 0;
 	}
