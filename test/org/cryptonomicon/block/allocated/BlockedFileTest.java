@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.cryptonomicon.block;
+package org.cryptonomicon.block.allocated;
 
 import static org.junit.Assert.*;
 
@@ -11,8 +11,10 @@ import java.io.RandomAccessFile;
 import java.util.Arrays;
 import java.util.Random;
 
+import org.cryptonomicon.block.Block;
 import org.cryptonomicon.block.BlockedFile;
 import org.cryptonomicon.block.BlockedFile.State;
+import org.cryptonomicon.block.allocated.AllocatedBlockedFile;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,48 +44,48 @@ public class BlockedFileTest {
 	}
 
 	/**
-	 * Test method for {@link org.cryptonomicon.block.BlockedFile#BlockedFile(java.io.File, ByteArray)}.
+	 * Test method for {@link org.cryptonomicon.block.allocated.AllocatedBlockedFile#BlockedFile(java.io.File, ByteArray)}.
 	 */
 	@Test
 	public void testBlockedFileFileByteArray() {
 		ByteArray salt = Jargon2.toByteArray(new byte[32]);
 		File file = new File("roro.zot");
-		BlockedFile bf = new BlockedFile( file, salt );
-		assertTrue( bf.file.equals(file) );
-		assertTrue( Arrays.equals( bf.secretKey.getEncoded(), salt.getBytes() ) );
-		assertTrue( bf.length == file.length() );
-		assertTrue( bf.blocks == null );
-		assertTrue( bf.state == State.IDLE );
+		AllocatedBlockedFile bf = new AllocatedBlockedFile( file, salt );
+		assertTrue( bf.getFile().equals(file) );
+		assertTrue( Arrays.equals( bf.getSecretKey().getEncoded(), salt.getBytes() ) );
+		assertTrue( bf.getLength() == file.length() );
+		assertTrue( bf.getBlockList() == null );
+		assertTrue( bf.getState() == State.IDLE );
 	}
 
 	/**
-	 * Test method for {@link org.cryptonomicon.block.BlockedFile#BlockedFile(ByteArray, int)}.
+	 * Test method for {@link org.cryptonomicon.block.allocated.AllocatedBlockedFile#BlockedFile(ByteArray, int)}.
 	 */
 	@Test
 	public void testBlockedFileByteArrayInt() {
 		ByteArray salt = Jargon2.toByteArray(new byte[32]);
-		BlockedFile bf = new BlockedFile( salt, 2 );
-		assertTrue( bf.file == null );
-		assertTrue( Arrays.equals( bf.secretKey.getEncoded(), salt.getBytes() ) );
-		assertTrue( bf.length == 2 * Block.BLOCK_SIZE );
-		assertTrue( bf.blocks != null && bf.blocks.size() == 2 );
-		assertTrue( bf.state == State.RAW );
+		AllocatedBlockedFile bf = new AllocatedBlockedFile( salt, 2 );
+		assertTrue( bf.getFile() == null );
+		assertTrue( Arrays.equals( bf.getSecretKey().getEncoded(), salt.getBytes() ) );
+		assertTrue( bf.getLength() == 2 * Block.BLOCK_SIZE );
+		assertTrue( bf.getBlockList() != null && bf.getBlockList().size() == 2 );
+		assertTrue( bf.getState() == State.RAW );
 	}
 
 	/**
-	 * Test method for {@link org.cryptonomicon.block.BlockedFile#pad(int)}.
+	 * Test method for {@link org.cryptonomicon.block.allocated.AllocatedBlockedFile#pad(int)}.
 	 */
 	@Test
 	public void testPad() {
 		ByteArray salt = Jargon2.toByteArray(new byte[32]);
-		BlockedFile bf = new BlockedFile( salt, 2 );
+		AllocatedBlockedFile bf = new AllocatedBlockedFile( salt, 2 );
 		bf.pad(3);
-		assertTrue( bf.length == 3 * Block.BLOCK_SIZE );
-		assertTrue( bf.blocks != null && bf.blocks.size() == 3 );
+		assertTrue( bf.getLength() == 3 * Block.BLOCK_SIZE );
+		assertTrue( bf.getBlockList() != null && bf.getBlockList().size() == 3 );
 	}
 
 	/**
-	 * Test method for {@link org.cryptonomicon.block.BlockedFile#getInputStream(java.io.InputStream, byte[])}.
+	 * Test method for {@link org.cryptonomicon.block.allocated.AllocatedBlockedFile#getInputStream(java.io.InputStream, byte[])}.
 	 */
 	@Test
 	public void testGetInputStream() {
@@ -91,7 +93,7 @@ public class BlockedFileTest {
 	}
 
 	/**
-	 * Test method for {@link org.cryptonomicon.block.BlockedFile#getOutputStream(java.io.OutputStream, byte[])}.
+	 * Test method for {@link org.cryptonomicon.block.allocated.AllocatedBlockedFile#getOutputStream(java.io.OutputStream, byte[])}.
 	 */
 	@Test
 	public void testGetOutputStream() {
@@ -99,7 +101,7 @@ public class BlockedFileTest {
 	}
 
 	/**
-	 * Test method for {@link org.cryptonomicon.block.BlockedFile#deflate(int)}.
+	 * Test method for {@link org.cryptonomicon.block.allocated.AllocatedBlockedFile#deflate(int)}.
 	 */
 	@Test
 	public void testDeflate() {
@@ -117,7 +119,7 @@ public class BlockedFileTest {
 			raf.write(block, 0, 10);
 			raf.close();
 			
-			BlockedFile bf = new BlockedFile( file, salt );
+			BlockedFile bf = new AllocatedBlockedFile( file, salt );
 			bf.deflate(6);
 			
 		} catch (IOException e) {
@@ -131,7 +133,7 @@ public class BlockedFileTest {
 	}
 
 	/**
-	 * Test method for {@link org.cryptonomicon.block.BlockedFile#inflate(java.io.File)}.
+	 * Test method for {@link org.cryptonomicon.block.allocated.AllocatedBlockedFile#inflate(java.io.File)}.
 	 */
 	@Test
 	public void testInflate() {
@@ -139,7 +141,7 @@ public class BlockedFileTest {
 	}
 
 	/**
-	 * Test method for {@link org.cryptonomicon.block.BlockedFile#encrypt(byte[])}.
+	 * Test method for {@link org.cryptonomicon.block.allocated.AllocatedBlockedFile#encrypt(byte[])}.
 	 */
 	@Test
 	public void testEncrypt() {
@@ -147,7 +149,7 @@ public class BlockedFileTest {
 	}
 
 	/**
-	 * Test method for {@link org.cryptonomicon.block.BlockedFile#decrypt(byte[])}.
+	 * Test method for {@link org.cryptonomicon.block.allocated.AllocatedBlockedFile#decrypt(byte[])}.
 	 */
 	@Test
 	public void testDecrypt() {
@@ -155,7 +157,7 @@ public class BlockedFileTest {
 	}
 
 	/**
-	 * Test method for {@link org.cryptonomicon.block.BlockedFile#toString()}.
+	 * Test method for {@link org.cryptonomicon.block.allocated.AllocatedBlockedFile#toString()}.
 	 */
 	@Test
 	public void testToString() {

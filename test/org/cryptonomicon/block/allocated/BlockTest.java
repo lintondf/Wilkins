@@ -1,4 +1,4 @@
-package org.cryptonomicon.block;
+package org.cryptonomicon.block.allocated;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -7,7 +7,8 @@ import static org.junit.Assert.fail;
 import java.util.Arrays;
 import java.util.Random;
 
-import org.cryptonomicon.block.AllocatedBlock;
+import org.cryptonomicon.block.Block;
+import org.cryptonomicon.block.allocated.AllocatedBlock;
 import org.junit.Test;
 
 public class BlockTest {

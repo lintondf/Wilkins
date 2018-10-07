@@ -5,6 +5,8 @@ package org.cryptonomicon.block;
 
 import java.util.ArrayList;
 
+import org.cryptonomicon.block.allocated.AllocatedBlockedFile;
+
 /**
  * @author lintondf
  *
@@ -16,16 +18,18 @@ public class XorSet {
 	ArrayList<BlockList> xorExcept;
 	ArrayList<BlockListIterator> iterators;
 	
-	public XorSet( int maxBlocks, ArrayList<BlockedFile> allFiles ) {
+	public XorSet( int maxBlocks, ArrayList<AllocatedBlockedFile> allFiles ) {
 		ArrayList<BlockList> allLists = new ArrayList<>();
 		for (BlockedFile file : allFiles) {
-			allLists.add( file.blocks );
+			allLists.add( file.getBlockList() );
 		}
-		xorOfAll = BlockList.xor(allLists);
+		xorOfAll = allFiles.get(0).getBlockList().make();
+		xorOfAll.xor(allLists);
 		xorExcept = new ArrayList<>();
 		iterators = new ArrayList<>();
 		for (int iList = 0; iList < allLists.size(); iList++) {
-			BlockList blockList = BlockList.xor( xorOfAll, allLists.get(iList) );
+			BlockList blockList = xorOfAll.make();
+			blockList.xor( xorOfAll, allLists.get(iList) );
 			xorExcept.add( blockList );
 			iterators.add( blockList.getIterator() );
 		}

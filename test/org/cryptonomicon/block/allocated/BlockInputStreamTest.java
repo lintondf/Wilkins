@@ -1,15 +1,16 @@
 /**
  * 
  */
-package org.cryptonomicon.block;
+package org.cryptonomicon.block.allocated;
 
 import static org.junit.Assert.*;
 
 import java.util.Arrays;
 
-import org.cryptonomicon.block.AllocatedBlock;
-import org.cryptonomicon.block.BlockInputStream;
-import org.cryptonomicon.block.BlockList;
+import org.cryptonomicon.block.Block;
+import org.cryptonomicon.block.allocated.AllocatedBlock;
+import org.cryptonomicon.block.allocated.AllocatedBlockInputStream;
+import org.cryptonomicon.block.allocated.AllocatedBlockList;
 import org.junit.Test;
 
 /**
@@ -19,12 +20,12 @@ import org.junit.Test;
 public class BlockInputStreamTest {
 
 	/**
-	 * Test method for {@link org.cryptonomicon.block.BlockInputStream#read()}.
+	 * Test method for {@link org.cryptonomicon.block.allocated.AllocatedBlockInputStream#read()}.
 	 */
 	@Test
 	public void testRead() {
 		byte[] array = new byte[Block.BLOCK_SIZE];
-		BlockList l1 = new BlockList();
+		AllocatedBlockList l1 = new AllocatedBlockList();
 		Arrays.fill(array, (byte) 0x01 );
 		l1.add( new AllocatedBlock(array) );
 		Arrays.fill(array, (byte) 0x02 );
@@ -34,7 +35,7 @@ public class BlockInputStreamTest {
 		
 		byte[] input = new byte[Block.BLOCK_SIZE];
 		try {
-			BlockInputStream bis = new BlockInputStream( l1 );
+			AllocatedBlockInputStream bis = new AllocatedBlockInputStream( l1 );
 			assertTrue( bis.available() > 0);
 			int where = 0;
 			for (int i = 0; i < 8; i++) {

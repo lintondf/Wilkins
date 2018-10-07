@@ -15,8 +15,9 @@ import java.util.Random;
 
 import org.apache.commons.io.IOUtils;
 import org.cryptonomicon.block.Block;
-import org.cryptonomicon.block.AllocatedBlock;
 import org.cryptonomicon.block.BlockedFile;
+import org.cryptonomicon.block.allocated.AllocatedBlock;
+import org.cryptonomicon.block.allocated.AllocatedBlockedFile;
 import org.cryptonomicon.mixers.ShuffledInterlaceMixer;
 import org.junit.Test;
 
@@ -115,12 +116,12 @@ public class ShuffledInterlaceMixerTest {
 		byte[] iv = new byte[16];
 		ByteArray key = Jargon2.toByteArray(new byte[16]).finalizable();
 		
-		BlockedFile dummy = new BlockedFile(key, 3);
-		dummy.state = BlockedFile.State.RAW;
+		AllocatedBlockedFile dummy = new AllocatedBlockedFile(key, 3);
+		dummy.setState(BlockedFile.State.RAW);
 		if (deflate)
-			dummy.state = BlockedFile.State.ZIPPED;
+			dummy.setState(BlockedFile.State.ZIPPED);
 		if (encrypt)
-			dummy.state = BlockedFile.State.ENCRYPTED;
+			dummy.setState(BlockedFile.State.ENCRYPTED);
 		
 		writeInputFile( inputs );
 		
@@ -149,13 +150,13 @@ public class ShuffledInterlaceMixerTest {
 		int maxBlocks = 1;
 		byte[] iv = new byte[16];
 		ByteArray key = Jargon2.toByteArray( new byte[16] ).finalizable();
-		ArrayList<BlockedFile> allFiles = new ArrayList<>();
+		ArrayList<AllocatedBlockedFile> allFiles = new ArrayList<>();
 		ArrayList<byte[]> contentsList = new ArrayList<>();
 		for (String str : contentStrings) {
 			contentsList.add( toBytes(str) );
 		}
 		for (byte[] contents : contentsList) {
-			allFiles.add( new BlockedFile(contents, key ));
+			allFiles.add( new AllocatedBlockedFile(contents, key ));
 		}
 		for (BlockedFile file : allFiles) {
 			if (deflate) file.deflate(-1);

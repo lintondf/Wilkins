@@ -34,6 +34,7 @@ import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.cryptonomicon.block.BlockedFile;
+import org.cryptonomicon.block.allocated.AllocatedBlockedFile;
 import org.cryptonomicon.configuration.Configuration;
 import org.cryptonomicon.configuration.KeyDerivationParameters;
 import org.cryptonomicon.configuration.KeyDerivationParameters.ArgonParameters;
@@ -76,8 +77,8 @@ import com.lambdaworks.crypto.SCrypt;
  */
 public class Wilkins {
 	
-	protected ArrayList<BlockedFile> dataFiles = new ArrayList<>();
-	protected ArrayList<BlockedFile> fillerFiles = new ArrayList<>();
+	protected ArrayList<AllocatedBlockedFile> dataFiles = new ArrayList<>();
+	protected ArrayList<AllocatedBlockedFile> fillerFiles = new ArrayList<>();
 	protected long maxLength = 0L;
 	protected int fillerCount = 3;
 	
@@ -218,9 +219,9 @@ public class Wilkins {
 					deriveKey(passPhrase, fileHeader.getSalt() )
 					).finalizable().clearSource();
 
-			BlockedFile pair = new BlockedFile(file, key);
-			getLogger().info(String.format("adding %-16s %s %s %d", path, toString(key.getBytes()), passPhrase, pair.length ));
-			maxLength = Math.max(maxLength, pair.length);
+			AllocatedBlockedFile pair = new AllocatedBlockedFile(file, key);
+			getLogger().info(String.format("adding %-16s %s %s %d", path, toString(key.getBytes()), passPhrase, pair.getLength() ));
+			maxLength = Math.max(maxLength, pair.getLength());
 			dataFiles.add(pair);
 			return true;
 		} catch (Exception x) {
@@ -235,7 +236,7 @@ public class Wilkins {
 				return false;
 			byte[] key = new byte[hashLength];
 			secureRandom.nextBytes(key);
-			BlockedFile pair = new BlockedFile(file, Jargon2.toByteArray(key).finalizable().clearSource());
+			AllocatedBlockedFile pair = new AllocatedBlockedFile(file, Jargon2.toByteArray(key).finalizable().clearSource());
 			fillerFiles.add(pair);
 			fillerCount++;
 			return true;
@@ -312,7 +313,7 @@ public class Wilkins {
 		}
 	}
 	
-	ArrayList<BlockedFile> allFiles = new ArrayList<>();
+	ArrayList<AllocatedBlockedFile> allFiles = new ArrayList<>();
 	int maxBlocks = 0;
 	
 	public boolean load( RandomAccessFile writer, FileHeader fileHeader ) throws IOException {
@@ -346,7 +347,7 @@ public class Wilkins {
 			for (int i = fillerFiles.size(); i < fillerCount; i++) {
 				byte[] key = new byte[hashLength];
 				secureRandom.nextBytes(key);
-				BlockedFile file = new BlockedFile( Jargon2.toByteArray(key).finalizable().clearSource(), maxBlocks );
+				AllocatedBlockedFile file = new AllocatedBlockedFile( Jargon2.toByteArray(key).finalizable().clearSource(), maxBlocks );
 				file.deflate(maxBlocks);
 				file.encrypt(fileHeader.getIV(fileOrdinal++));
 				fillerFiles.add(file);
@@ -385,11 +386,11 @@ public class Wilkins {
 		int guidanceOrdinal = 0;
 		for (int modulus : moduli) {
 			BlockedFile file = allFiles.get(modulus);
-			PayloadFileGuidance fileGuidance = new PayloadFileGuidance(maxBlocks, moduli.length, modulus, seed, (int) file.length );
+			PayloadFileGuidance fileGuidance = new PayloadFileGuidance(maxBlocks, moduli.length, modulus, seed, (int) file.getLength() );
 			System.out.printf("FILE %d: (%d) %s\n", modulus, fileGuidance.getPlainText().length, 
 					BaseEncoding.base16().lowerCase().encode(fileGuidance.getPlainText()));
 			//System.out.println( fileGuidance.toString() );
-			fileGuidance.encode( getCipher(), file.secretKey, fileHeader.getIV(guidanceOrdinal++) );
+			fileGuidance.encode( getCipher(), file.getSecretKey(), fileHeader.getIV(guidanceOrdinal++) );
 			writer.write( fileGuidance.getCipherText() );
 			//System.out.printf("      : %s\n", toString(fileGuidance.getCipherText()));
 		}

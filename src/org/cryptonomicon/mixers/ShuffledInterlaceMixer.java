@@ -20,11 +20,14 @@ import javax.crypto.CipherOutputStream;
 import org.cryptonomicon.PayloadFileGuidance;
 import org.cryptonomicon.Wilkins;
 import org.cryptonomicon.block.Block;
-import org.cryptonomicon.block.AllocatedBlock;
 import org.cryptonomicon.block.BlockList;
 import org.cryptonomicon.block.BlockListIterator;
 import org.cryptonomicon.block.BlockReader;
 import org.cryptonomicon.block.BlockedFile;
+import org.cryptonomicon.block.allocated.AllocatedBlock;
+import org.cryptonomicon.block.allocated.AllocatedBlockList;
+import org.cryptonomicon.block.allocated.AllocatedBlockReader;
+import org.cryptonomicon.block.allocated.AllocatedBlockedFile;
 
 /**
  * @author lintondf
@@ -55,11 +58,11 @@ public class ShuffledInterlaceMixer implements Mixer {
 		long length = fileGuidance.getLength();
 		int fileModulus = fileGuidance.getFileOrdinal();
 		int maxBlocks = fileGuidance.getMaxBlocks();
-		ArrayList<BlockReader> readers = new ArrayList<>();
+		ArrayList<AllocatedBlockReader> readers = new ArrayList<>();
 		for (int i = 0; i < nFiles+1; i++) {
-			readers.add( new BlockReader(file, length ) );
+			readers.add( new AllocatedBlockReader(file, length ) );
 		}
-		ArrayList<BlockReader> shuffled = new ArrayList<>();
+		ArrayList<AllocatedBlockReader> shuffled = new ArrayList<>();
 		shuffled.addAll(readers);
 		int nBlocks = (int) length / Block.BLOCK_SIZE;  //TODO hoist to method
 		if ( ((int) length % Block.BLOCK_SIZE) > 0)
@@ -88,22 +91,24 @@ public class ShuffledInterlaceMixer implements Mixer {
 	 */
 	@Override
 	public boolean writeBlocks(Random random, int maxBlocks,
-			ArrayList<BlockedFile> allFiles, RandomAccessFile writer)
+			ArrayList<AllocatedBlockedFile> allFiles, RandomAccessFile writer)
 			throws IOException {
 		// generate xor'd data blocks: {for-each-i {xor(all but i)}, xor all}
 		for (BlockedFile file : allFiles) {
-			Wilkins.getLogger().log(Level.FINEST, String.format("of %d\n", file.length ) );
+			Wilkins.getLogger().log(Level.FINEST, String.format("of %d\n", file.getLength() ) );
 		}
 		ArrayList<BlockList> allLists = new ArrayList<>();
-		for (BlockedFile file : allFiles) {
-			allLists.add( file.blocks );
+		for (AllocatedBlockedFile file : allFiles) {
+			allLists.add( file.getBlockList() );
 		}
-		BlockList xorOfAll = BlockList.xor(allLists);
-		ArrayList<BlockList> xorExcept = new ArrayList<>();
+		AllocatedBlockList xorOfAll = new AllocatedBlockList();
+		xorOfAll.xor(allLists);
+		ArrayList<AllocatedBlockList> xorExcept = new ArrayList<>();
 		ArrayList<BlockListIterator> iterators = new ArrayList<>();
 		ArrayList<BlockListIterator> shuffled = new ArrayList<>();
 		for (int iList = 0; iList < allLists.size(); iList++) {
-			BlockList blockList = BlockList.xor( xorOfAll, allLists.get(iList) );
+			AllocatedBlockList blockList = new AllocatedBlockList();
+			blockList.xor( xorOfAll, allLists.get(iList) );
 			xorExcept.add( blockList );
 			iterators.add( blockList.getIterator() );
 		}

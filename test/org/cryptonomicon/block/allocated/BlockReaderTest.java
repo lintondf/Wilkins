@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.cryptonomicon.block;
+package org.cryptonomicon.block.allocated;
 
 import static org.junit.Assert.*;
 
@@ -10,8 +10,10 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.Arrays;
 
-import org.cryptonomicon.block.AllocatedBlock;
+import org.cryptonomicon.block.Block;
 import org.cryptonomicon.block.BlockReader;
+import org.cryptonomicon.block.allocated.AllocatedBlock;
+import org.cryptonomicon.block.allocated.AllocatedBlockReader;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -61,14 +63,14 @@ public class BlockReaderTest {
 	}
 
 	/**
-	 * Test method for {@link org.cryptonomicon.block.BlockReader#read()}.
+	 * Test method for {@link org.cryptonomicon.block.allocated.AllocatedBlockReader#read()}.
 	 */
 	@Test
 	public void testRead() {
 		try {
 			raf.seek(0);
-			BlockReader blockReader = new BlockReader( raf, length );
-			AllocatedBlock block = blockReader.read();
+			BlockReader blockReader = new AllocatedBlockReader( raf, length );
+			Block block = blockReader.read();
 			int iBlock = 0;
 			byte[] check = new byte[Block.BLOCK_SIZE];
 			while (block.getCount() > 0) {
@@ -83,7 +85,7 @@ public class BlockReaderTest {
 			assertTrue( iBlock == 6 );
 			
 			raf.seek(0);
-			blockReader = new BlockReader( raf, 10 );
+			blockReader = new AllocatedBlockReader( raf, 10 );
 			block = blockReader.read();
 			assertTrue(block.getCount() == 10);
 			Arrays.fill(check, (byte) 0x00 );
@@ -98,14 +100,14 @@ public class BlockReaderTest {
 	}
 
 	/**
-	 * Test method for {@link org.cryptonomicon.block.BlockReader#readFull()}.
+	 * Test method for {@link org.cryptonomicon.block.allocated.AllocatedBlockReader#readFull()}.
 	 */
 	@Test
 	public void testReadFull() {
 		try {
 			raf.seek(0);
-			BlockReader blockReader = new BlockReader( raf, length );
-			AllocatedBlock block = blockReader.readFull();
+			BlockReader blockReader = new AllocatedBlockReader( raf, length );
+			Block block = blockReader.readFull();
 			int iBlock = 0;
 			byte[] check = new byte[Block.BLOCK_SIZE];
 			while (block != null && block.getCount() > 0) {
@@ -120,7 +122,7 @@ public class BlockReaderTest {
 			assertTrue( iBlock == 6 );
 			
 			raf.seek(0);
-			blockReader = new BlockReader( raf, 10 );
+			blockReader = new AllocatedBlockReader( raf, 10 );
 			block = blockReader.readFull();
 			assertTrue(block.getCount() == Block.BLOCK_SIZE);
 			Arrays.fill(check, (byte) 0x00 );

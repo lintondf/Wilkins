@@ -1,4 +1,4 @@
-package org.cryptonomicon.block;
+package org.cryptonomicon.block.allocated;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -6,6 +6,7 @@ import java.io.RandomAccessFile;
 import java.util.Arrays;
 
 import org.cryptonomicon.Wilkins;
+import org.cryptonomicon.block.Block;
 
 import com.google.common.io.BaseEncoding;
 
@@ -122,7 +123,7 @@ public class AllocatedBlock implements Block {
 	}
 
 	public static void main(String[] args) {
-		BlockList blocks = new BlockList();
+		AllocatedBlockList blocks = new AllocatedBlockList();
 		AllocatedBlock block = new AllocatedBlock();
 		Arrays.fill(block.contents, (byte)100);
 		block.count = Block.BLOCK_SIZE;
@@ -133,7 +134,7 @@ public class AllocatedBlock implements Block {
 		block.count = 10;
 		blocks.add(block);
 		try {
-			BlockInputStream bis = new BlockInputStream( blocks );
+			AllocatedBlockInputStream bis = new AllocatedBlockInputStream( blocks );
 			System.out.println( bis.available() );
 			while (bis.available() > 0) {
 				int ch = bis.read();
