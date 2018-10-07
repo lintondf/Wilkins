@@ -19,6 +19,7 @@ import javax.crypto.CipherOutputStream;
 
 import org.cryptonomicon.PayloadFileGuidance;
 import org.cryptonomicon.Wilkins;
+import org.cryptonomicon.block.AbstractBlock;
 import org.cryptonomicon.block.Block;
 import org.cryptonomicon.block.BlockList;
 import org.cryptonomicon.block.BlockListIterator;
@@ -60,8 +61,8 @@ public class ShuffledInterlaceMixer implements Mixer {
 		}
 		ArrayList<BlockReader> shuffled = new ArrayList<>();
 		shuffled.addAll(readers);
-		int nBlocks = (int) length / Block.BLOCK_SIZE;  //TODO hoist to method
-		if ( ((int) length % Block.BLOCK_SIZE) > 0)
+		int nBlocks = (int) length / AbstractBlock.BLOCK_SIZE;  //TODO hoist to method
+		if ( ((int) length % AbstractBlock.BLOCK_SIZE) > 0)
 			nBlocks++;
 		int remaining = (int) length;
 		Wilkins.getLogger().log(Level.FINE, String.format("Read Blocks %d from %d of %d\n", nBlocks, fileModulus, length ));
@@ -71,12 +72,12 @@ public class ShuffledInterlaceMixer implements Mixer {
 				reader.readFull();
 				Wilkins.getLogger().log(Level.FINEST, String.format( "R%d,%d %s\n", iBlock, readers.indexOf(reader), reader.getLast().toString() ) );
 			}
-			Block allXor = readers.get(nFiles).getLast();
+			AbstractBlock allXor = readers.get(nFiles).getLast();
 			Block allButTarget = readers.get(fileModulus).getLast();
 			allXor = allXor.xor( allButTarget );
 			Wilkins.getLogger().log(Level.FINEST, String.format("%3d %3d  %8d / %s\n", iBlock, nBlocks, remaining, allXor.toString() ));
-			allXor.write( cos, (remaining > Block.BLOCK_SIZE) ? Block.BLOCK_SIZE : remaining);
-			remaining -= Block.BLOCK_SIZE;
+			allXor.write( cos, (remaining > AbstractBlock.BLOCK_SIZE) ? AbstractBlock.BLOCK_SIZE : remaining);
+			remaining -= AbstractBlock.BLOCK_SIZE;
 		}
 		cos.close();
 		return true;
@@ -113,9 +114,9 @@ public class ShuffledInterlaceMixer implements Mixer {
 		for (int iBlock = 0; iBlock < maxBlocks; iBlock++) {
 			permute( random, shuffled );
 			for (BlockListIterator it : shuffled) {
-				Block block = it.next();
+				AbstractBlock block = it.next();
 				//if (iBlock >= 13 && iBlock <= 14) System.out.printf( "W%d,%d %s\n", iBlock, iterators.indexOf(it), block.toString() );
-				block.write( writer, Block.BLOCK_SIZE );
+				block.write( writer, AbstractBlock.BLOCK_SIZE );
 				Wilkins.getLogger().log(Level.FINEST, String.format("%d,%d @ %d\n", iBlock, iterators.indexOf(it), writer.getFilePointer() ) );
 			}
 		}

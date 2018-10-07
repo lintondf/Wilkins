@@ -2,12 +2,12 @@ package org.cryptonomicon.block;
 
 import java.util.Iterator;
 
-public class BlockListIterator implements Iterator<Block> {
-	protected Iterator<Block> it;
-	protected Block current;
+public class BlockListIterator implements Iterator<AbstractBlock> {
+	protected Iterator<AbstractBlock> it;
+	protected AbstractBlock current;
 	
-	public BlockListIterator( Iterator<Block> it ) {
-		this.it = it;
+	public BlockListIterator( Iterator<AbstractBlock> iterator ) {
+		this.it = iterator;
 	}
 	
 	@Override
@@ -17,12 +17,12 @@ public class BlockListIterator implements Iterator<Block> {
 
 
 	@Override
-	public synchronized Block next() {
+	public synchronized AbstractBlock next() {
 		current = it.next();
 		return current;
 	}
 	
-	public Block current() {
+	public AbstractBlock current() {
 		return current;
 	}
 	

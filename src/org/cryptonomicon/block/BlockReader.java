@@ -15,7 +15,7 @@ public class BlockReader {
 	
 	public Block read() throws IOException {
 		current = new Block();
-		long n = (remaining > Block.BLOCK_SIZE) ? Block.BLOCK_SIZE : remaining;
+		long n = (remaining > AbstractBlock.BLOCK_SIZE) ? AbstractBlock.BLOCK_SIZE : remaining;
 		current.setCount(raf.read( current.getContents(), 0, (int) n ));
 		if (current.getCount() < 0)
 			current = null;
@@ -25,10 +25,10 @@ public class BlockReader {
 	
 	public Block readFull() throws IOException {
 		current = new Block();
-		current.setCount(raf.read( current.getContents(), 0, Block.BLOCK_SIZE ));
+		current.setCount(raf.read( current.getContents(), 0, AbstractBlock.BLOCK_SIZE ));
 		if (current.getCount() < 0)
 			current = null;
-		remaining -= Block.BLOCK_SIZE;
+		remaining -= AbstractBlock.BLOCK_SIZE;
 		return current;
 	}
 	

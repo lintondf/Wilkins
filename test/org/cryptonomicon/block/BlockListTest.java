@@ -126,7 +126,7 @@ public class BlockListTest {
 	@Test
 	public void testGetList() {
 		BlockList blockList = new BlockList();
-		List<Block> list = blockList.getList();
+		List<AbstractBlock> list = blockList.getList();
 		assertTrue( list != null );
 		assertTrue( list.size() == 0 );
 	}
@@ -154,15 +154,15 @@ public class BlockListTest {
 		assertTrue( it.hasNext() );
 		assertTrue( it.next().getCount() == 30 );
 		assertTrue( it.hasNext() );
-		assertTrue( it.next().getCount() == Block.BLOCK_SIZE );
+		assertTrue( it.next().getCount() == AbstractBlock.BLOCK_SIZE );
 		assertTrue( it.hasNext() );
-		assertTrue( it.next().getCount() == Block.BLOCK_SIZE );
+		assertTrue( it.next().getCount() == AbstractBlock.BLOCK_SIZE );
 		assertFalse( it.hasNext() );		
 	}
 
 	@Test
 	public void testXorListOfBlockList() {
-		byte[] array = new byte[Block.BLOCK_SIZE];
+		byte[] array = new byte[AbstractBlock.BLOCK_SIZE];
 		BlockList l1 = new BlockList();
 		Arrays.fill(array, (byte) 0x01 );
 		l1.add( new Block(array) );
@@ -205,7 +205,7 @@ public class BlockListTest {
 
 	@Test
 	public void testXorBlockListBlockList() {
-		byte[] array = new byte[Block.BLOCK_SIZE];
+		byte[] array = new byte[AbstractBlock.BLOCK_SIZE];
 		BlockList l1 = new BlockList();
 		Arrays.fill(array, (byte) 0x01 );
 		l1.add( new Block(array) );

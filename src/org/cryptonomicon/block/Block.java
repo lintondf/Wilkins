@@ -9,9 +9,7 @@ import org.cryptonomicon.Wilkins;
 
 import com.google.common.io.BaseEncoding;
 
-public class Block {
-	public static final int BLOCK_SIZE = 1024;
-
+public class Block implements AbstractBlock {
 	private byte[] contents;
 	private int count;
 	
@@ -25,13 +23,13 @@ public class Block {
 		Wilkins.getSecureRandom().nextBytes(contents);
 	}
 	
-	public static Block getTestBlock( int count ) {
+	public static AbstractBlock getTestBlock( int count ) {
 		return new Block(count);
 	}
 	
-	protected Block( Block that) {
-		contents = Arrays.copyOf(that.contents, BLOCK_SIZE);
-		count = that.count;
+	protected Block( AbstractBlock that) {
+		contents = Arrays.copyOf(that.getContents(), BLOCK_SIZE);
+		count = that.getCount();
 	}
 	
 	protected Block( byte[] test ) {
@@ -39,7 +37,7 @@ public class Block {
 		count = test.length;
 	}
 	
-	protected void pad() {
+	public void pad() {
 		if (count < BLOCK_SIZE) {
 			byte[] padding = new byte[BLOCK_SIZE-count];
 			Wilkins.getSecureRandom().nextBytes(padding);
@@ -50,7 +48,11 @@ public class Block {
 		}
 	}
 	
-	public Block xor( Block that) {
+	/* (non-Javadoc)
+	 * @see org.cryptonomicon.block.AbstractBlock#xor(org.cryptonomicon.block.Block)
+	 */
+	@Override
+	public AbstractBlock xor( AbstractBlock that) {
 		Block output = new Block(that);
 		for (int i = 0; i < output.count; i++) {
 			output.contents[i] ^= contents[i];
@@ -58,19 +60,35 @@ public class Block {
 		return output;
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.cryptonomicon.block.AbstractBlock#write(java.io.OutputStream)
+	 */
+	@Override
 	public void write( OutputStream os ) throws IOException {
 		os.write( contents, 0, count );
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.cryptonomicon.block.AbstractBlock#write(java.io.OutputStream, int)
+	 */
+	@Override
 	public void write( OutputStream os, int n ) throws IOException {
 		os.write( contents, 0, n );
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.cryptonomicon.block.AbstractBlock#write(java.io.RandomAccessFile, int)
+	 */
+	@Override
 	public void write(RandomAccessFile writer, int blockSize) throws IOException {
 		writer.write( contents, 0, blockSize );
 		
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.cryptonomicon.block.AbstractBlock#toString()
+	 */
+	@Override
 	public String toString() {
 		return String.format("%4d: %s", count, BaseEncoding.base16().lowerCase().encode(Arrays.copyOf(contents, count)));
 	}
@@ -78,7 +96,7 @@ public class Block {
 	/**
 	 * @return the count
 	 */
-	protected int getCount() {
+	public int getCount() {
 		return count;
 	}
 
@@ -92,7 +110,7 @@ public class Block {
 	/**
 	 * @return the contents
 	 */
-	protected byte[] getContents() {
+	public byte[] getContents() {
 		return contents;
 	}
 
@@ -107,7 +125,7 @@ public class Block {
 		BlockList blocks = new BlockList();
 		Block block = new Block();
 		Arrays.fill(block.contents, (byte)100);
-		block.count = Block.BLOCK_SIZE;
+		block.count = AbstractBlock.BLOCK_SIZE;
 		blocks.add(block);
 		block = new Block();
 		for (int i = 0; i < 10; i++)
