@@ -91,14 +91,14 @@ public class ShuffledInterlaceMixer implements Mixer {
 	 */
 	@Override
 	public boolean writeBlocks(Random random, int maxBlocks,
-			ArrayList<AllocatedBlockedFile> allFiles, RandomAccessFile writer)
+			ArrayList<BlockedFile> allFiles, RandomAccessFile writer)
 			throws IOException {
 		// generate xor'd data blocks: {for-each-i {xor(all but i)}, xor all}
 		for (BlockedFile file : allFiles) {
 			Wilkins.getLogger().log(Level.FINEST, String.format("of %d\n", file.getLength() ) );
 		}
 		ArrayList<BlockList> allLists = new ArrayList<>();
-		for (AllocatedBlockedFile file : allFiles) {
+		for (BlockedFile file : allFiles) {
 			allLists.add( file.getBlockList() );
 		}
 		AllocatedBlockList xorOfAll = new AllocatedBlockList();

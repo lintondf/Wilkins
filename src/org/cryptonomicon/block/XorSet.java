@@ -5,20 +5,35 @@ package org.cryptonomicon.block;
 
 import java.util.ArrayList;
 
-import org.cryptonomicon.block.allocated.AllocatedBlockedFile;
+import org.cryptonomicon.block.BlockedFile;
 
+// TODO: Auto-generated Javadoc
 /**
- * @author lintondf
+ * The Class XorSet.
  *
+ * @author lintondf
  */
 public class XorSet {
 	
+	/** The max blocks. */
 	int maxBlocks;
+	
+	/** The xor of all. */
 	BlockList xorOfAll;
+	
+	/** The xor except. */
 	ArrayList<BlockList> xorExcept;
+	
+	/** The iterators. */
 	ArrayList<BlockListIterator> iterators;
 	
-	public XorSet( int maxBlocks, ArrayList<AllocatedBlockedFile> allFiles ) {
+	/**
+	 * Instantiates a new xor set.
+	 *
+	 * @param maxBlocks the max blocks
+	 * @param allFiles the all files
+	 */
+	public XorSet( int maxBlocks, ArrayList<BlockedFile> allFiles ) {
 		ArrayList<BlockList> allLists = new ArrayList<>();
 		for (BlockedFile file : allFiles) {
 			allLists.add( file.getBlockList() );
@@ -37,6 +52,8 @@ public class XorSet {
 	}
 
 	/**
+	 * Gets the max blocks.
+	 *
 	 * @return the maxBlocks
 	 */
 	public int getMaxBlocks() {
@@ -44,6 +61,8 @@ public class XorSet {
 	}
 
 	/**
+	 * Sets the max blocks.
+	 *
 	 * @param maxBlocks the maxBlocks to set
 	 */
 	public void setMaxBlocks(int maxBlocks) {
@@ -51,6 +70,8 @@ public class XorSet {
 	}
 
 	/**
+	 * Gets the xor of all.
+	 *
 	 * @return the xorOfAll
 	 */
 	public BlockList getXorOfAll() {
@@ -58,6 +79,8 @@ public class XorSet {
 	}
 
 	/**
+	 * Sets the xor of all.
+	 *
 	 * @param xorOfAll the xorOfAll to set
 	 */
 	public void setXorOfAll(BlockList xorOfAll) {
@@ -65,6 +88,8 @@ public class XorSet {
 	}
 
 	/**
+	 * Gets the xor except.
+	 *
 	 * @return the xorExcept
 	 */
 	public ArrayList<BlockList> getXorExcept() {
@@ -72,6 +97,8 @@ public class XorSet {
 	}
 
 	/**
+	 * Sets the xor except.
+	 *
 	 * @param xorExcept the xorExcept to set
 	 */
 	public void setXorExcept(ArrayList<BlockList> xorExcept) {
@@ -79,6 +106,8 @@ public class XorSet {
 	}
 
 	/**
+	 * Gets the iterators.
+	 *
 	 * @return the iterators
 	 */
 	public ArrayList<BlockListIterator> getIterators() {
@@ -86,6 +115,8 @@ public class XorSet {
 	}
 
 	/**
+	 * Sets the iterators.
+	 *
 	 * @param iterators the iterators to set
 	 */
 	public void setIterators(ArrayList<BlockListIterator> iterators) {
@@ -93,7 +124,9 @@ public class XorSet {
 	}
 
 	/**
-	 * @param args
+	 * The main method.
+	 *
+	 * @param args the arguments
 	 */
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub

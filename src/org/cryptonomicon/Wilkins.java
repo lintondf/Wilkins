@@ -313,7 +313,7 @@ public class Wilkins {
 		}
 	}
 	
-	ArrayList<AllocatedBlockedFile> allFiles = new ArrayList<>();
+	ArrayList<BlockedFile> allFiles = new ArrayList<>();
 	int maxBlocks = 0;
 	
 	public boolean load( RandomAccessFile writer, FileHeader fileHeader ) throws IOException {

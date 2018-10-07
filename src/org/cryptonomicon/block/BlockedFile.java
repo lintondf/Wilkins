@@ -6,6 +6,10 @@ import java.io.OutputStream;
 
 import javax.crypto.SecretKey;
 
+// TODO: Auto-generated Javadoc
+/**
+ * The Interface BlockedFile.
+ */
 public interface BlockedFile {
 
 	/**
@@ -22,6 +26,11 @@ public interface BlockedFile {
 		 ENCRYPTED
 	};
 
+	/**
+	 * Gets the block list.
+	 *
+	 * @return the block list
+	 */
 	public abstract BlockList getBlockList();
 
 	/**
@@ -32,7 +41,7 @@ public interface BlockedFile {
 	public abstract void pad(int count);
 
 	/**
-	 * Generates a chain of streams based the supplied input stream to encrypt and deflate the content
+	 * Generates a chain of streams based the supplied input stream to encrypt and deflate the content.
 	 *
 	 * @param is the base InputStream
 	 * @param iv the AES initial value
@@ -50,7 +59,7 @@ public interface BlockedFile {
 	public abstract OutputStream getOutputStream(OutputStream os, byte[] iv);
 
 	/**
-	 * Deflate the BlockedFile content
+	 * Deflate the BlockedFile content.
 	 *
 	 * @param blockLimit the maximum number of blocks to generate; -1 for no limit
 	 * @return the number of blocks of content after deflation
@@ -58,7 +67,7 @@ public interface BlockedFile {
 	public abstract int deflate(int blockLimit);
 
 	/**
-	 * Inflate the content, outputting to the specified file
+	 * Inflate the content, outputting to the specified file.
 	 *
 	 * @param output the output file
 	 */
@@ -80,21 +89,29 @@ public interface BlockedFile {
 	public abstract void decrypt(byte[] iv);
 
 	/**
+	 * Gets the file.
+	 *
 	 * @return the file
 	 */
 	public abstract File getFile();
 
 	/**
+	 * Gets the secret key.
+	 *
 	 * @return the secretKey
 	 */
 	public abstract SecretKey getSecretKey();
 
 	/**
+	 * Gets the length.
+	 *
 	 * @return the length
 	 */
 	public abstract long getLength();
 
 	/**
+	 * Gets the state.
+	 *
 	 * @return the state
 	 */
 	public abstract State getState();

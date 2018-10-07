@@ -150,7 +150,7 @@ public class ShuffledInterlaceMixerTest {
 		int maxBlocks = 1;
 		byte[] iv = new byte[16];
 		ByteArray key = Jargon2.toByteArray( new byte[16] ).finalizable();
-		ArrayList<AllocatedBlockedFile> allFiles = new ArrayList<>();
+		ArrayList<BlockedFile> allFiles = new ArrayList<>();
 		ArrayList<byte[]> contentsList = new ArrayList<>();
 		for (String str : contentStrings) {
 			contentsList.add( toBytes(str) );
