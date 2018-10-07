@@ -1,5 +1,8 @@
 package org.cryptonomicon.block;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.RandomAccessFile;
 import java.util.Arrays;
 
 import org.cryptonomicon.Wilkins;
@@ -12,11 +15,21 @@ public class Block {
 	private byte[] contents;
 	private int count;
 	
-	public Block() {
+	protected Block() {
 		contents = new byte[BLOCK_SIZE];
 	}
 	
-	public Block( Block that) {
+	protected Block( int count ) {
+		this.count = count;
+		contents = new byte[BLOCK_SIZE];
+		Wilkins.getSecureRandom().nextBytes(contents);
+	}
+	
+	public static Block getTestBlock( int count ) {
+		return new Block(count);
+	}
+	
+	protected Block( Block that) {
 		contents = Arrays.copyOf(that.contents, BLOCK_SIZE);
 		count = that.count;
 	}
@@ -26,7 +39,7 @@ public class Block {
 		count = test.length;
 	}
 	
-	public void pad() {
+	protected void pad() {
 		if (count < BLOCK_SIZE) {
 			byte[] padding = new byte[BLOCK_SIZE-count];
 			Wilkins.getSecureRandom().nextBytes(padding);
@@ -45,6 +58,19 @@ public class Block {
 		return output;
 	}
 	
+	public void write( OutputStream os ) throws IOException {
+		os.write( contents, 0, count );
+	}
+	
+	public void write( OutputStream os, int n ) throws IOException {
+		os.write( contents, 0, n );
+	}
+	
+	public void write(RandomAccessFile writer, int blockSize) throws IOException {
+		writer.write( contents, 0, blockSize );
+		
+	}
+	
 	public String toString() {
 		return String.format("%4d: %s", count, BaseEncoding.base16().lowerCase().encode(Arrays.copyOf(contents, count)));
 	}
@@ -52,28 +78,28 @@ public class Block {
 	/**
 	 * @return the count
 	 */
-	public int getCount() {
+	protected int getCount() {
 		return count;
 	}
 
 	/**
 	 * @param count the count to set
 	 */
-    public void setCount(int count) {
+    protected void setCount(int count) {
 		this.count = count;
 	}
 
 	/**
 	 * @return the contents
 	 */
-	public byte[] getContents() {
+	protected byte[] getContents() {
 		return contents;
 	}
 
 	/**
 	 * @param contents the contents to set 
 	 */
-	public void setContents(byte[] contents) {
+	protected void setContents(byte[] contents) {
 		this.contents = contents;
 	}
 
@@ -102,4 +128,5 @@ public class Block {
 			x.printStackTrace();
 		}
 	}
+
 }

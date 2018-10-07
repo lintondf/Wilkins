@@ -357,11 +357,6 @@ public class Wilkins {
 		
 		allFiles.addAll(dataFiles);
 		allFiles.addAll(fillerFiles);
-		int i = 0;
-		for (BlockedFile file : allFiles ) {
-			System.out.println( i + ": " + file.blocks.getList().get(13).toString() );
-			System.out.println( i++ + ": " + file.blocks.getList().get(14).toString() );
-		}
 		//allFiles.forEach( System.out::println );
 		System.out.println( maxBlocks + " / " + allFiles.size() );
 		return true;

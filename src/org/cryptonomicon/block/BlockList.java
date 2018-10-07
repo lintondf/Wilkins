@@ -9,16 +9,16 @@ public class BlockList {
 	
 	protected ArrayList<Block> list;
 	
-	public BlockList() {
+	protected BlockList() {
 		list = new ArrayList<>();
 	}
 	
 	
-	public synchronized void add( Block block ) {
+	protected synchronized void add( Block block ) {
 		list.add(block);
 	}
 	
-	public int length() {
+	protected int length() {
 		int n = 0;
 		for (Block block : list) {
 			n += block.getCount();
@@ -26,7 +26,7 @@ public class BlockList {
 		return n;
 	}
 
-	public int size() {
+	protected int size() {
 		return list.size();
 	}
 
@@ -34,20 +34,20 @@ public class BlockList {
 		return new BlockListIterator(list.iterator());
 	}
 	
-	public Block getFirst() {
+	protected Block getFirst() {
 		return list.get(0);
 	}
 	
-	public Block getLast() {
+	protected Block getLast() {
 		return list.get(list.size()-1);
 	}
 	
-	public List<Block> getList() {
+	protected List<Block> getList() {
 		return list;
 	}
 
 
-	public static void pad( BlockList those, int n ) {
+	protected static void pad( BlockList those, int n ) {
 		List<Block> blocks = those.getList();
 		int m = blocks.size();
 		for (int i = m; i < n; i++) {

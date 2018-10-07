@@ -63,10 +63,8 @@ public class ShuffledInterlaceMixerTest {
 		try {
 			FileOutputStream fos = new FileOutputStream( new File(testFileName) );
 			for (String input : inputs) {
-				Block block = new Block();
-				block.setContents(Arrays.copyOf(toBytes(input), Block.BLOCK_SIZE));
-				block.setCount(Block.BLOCK_SIZE);
-				fos.write( block.getContents() );
+				Block block = Block.getTestBlock(Block.BLOCK_SIZE);
+				block.write( fos );
 			}
 			fos.close();
 		} catch (IOException e) {

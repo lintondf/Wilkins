@@ -1,13 +1,9 @@
 /**
  * 
  */
-package org.cryptonomicon;
+package org.cryptonomicon.block;
 
 import java.util.ArrayList;
-
-import org.cryptonomicon.block.BlockList;
-import org.cryptonomicon.block.BlockListIterator;
-import org.cryptonomicon.block.BlockedFile;
 
 /**
  * @author lintondf
