@@ -47,7 +47,7 @@ public class AllocatedBlock implements Block {
 			for (int i = 0; i < padding.length; i++) {
 				contents[count+i] = padding[i];
 			}
-			//count = BLOCK_SIZE;
+			count = BLOCK_SIZE;
 		}
 	}
 	

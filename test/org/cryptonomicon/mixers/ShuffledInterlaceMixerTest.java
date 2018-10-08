@@ -1,4 +1,4 @@
-package org.cryptonomicon;
+package org.cryptonomicon.mixers;
 
 import static org.junit.Assert.*;
 
@@ -14,6 +14,8 @@ import java.util.Arrays;
 import java.util.Random;
 
 import org.apache.commons.io.IOUtils;
+import org.cryptonomicon.PayloadFileGuidance;
+import org.cryptonomicon.Wilkins;
 import org.cryptonomicon.block.Block;
 import org.cryptonomicon.block.BlockedFile;
 import org.cryptonomicon.block.allocated.AllocatedBlock;
@@ -51,7 +53,6 @@ public class ShuffledInterlaceMixerTest {
 	@AfterClass
 	public static void tearDown() throws Exception {
 		testFile.delete();
-		wilkins.wait();
 	}
 
 	
@@ -91,7 +92,7 @@ public class ShuffledInterlaceMixerTest {
 			FileOutputStream fos = new FileOutputStream( testFile.getAbsolutePath() );
 			for (String input : inputs) {
 				Block block = new AllocatedBlock( toBytes(input) );
-				System.out.println(input + " " + block.toString());
+//				System.out.println(input + " " + block.toString());
 				block.pad();
 				block.write( fos );
 			}
@@ -107,13 +108,11 @@ public class ShuffledInterlaceMixerTest {
 	}
 	
 	@Test
-	@Ignore
 	public void testReadBlocksZipped() {
 		testReadBlocks( true, false, outputDeflated, new int[]{11, 11});
 	}
 	
 	@Test
-	@Ignore
 	public void testReadBlocksZippedEncrypted() {
 		testReadBlocks( true, true, outputDeflatedEncrypted, new int[]{16, 16});
 	}
@@ -163,7 +162,7 @@ public class ShuffledInterlaceMixerTest {
 				ByteArrayOutputStream bos = new ByteArrayOutputStream();
 				OutputStream cos = dummy.getOutputStream(bos, iv);
 				mixer.readBlocks( fileGuidance, random, raf, cos );
-				System.out.println( i + ": " + Wilkins.toString(bos.toByteArray()) + " vs " + contentStrings[i] );
+				//System.out.println( i + ": " + Wilkins.toString(bos.toByteArray()) + " vs " + contentStrings[i] );
 				assertTrue( Arrays.equals(bos.toByteArray(), toBytes(contentStrings[i])));
 			} catch (IOException e) {
 				e.printStackTrace();

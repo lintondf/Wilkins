@@ -95,7 +95,7 @@ public class ShuffledInterlaceMixer implements Mixer {
 			throws IOException {
 		// generate xor'd data blocks: {for-each-i {xor(all but i)}, xor all}
 		for (BlockedFile file : allFiles) {
-			Wilkins.getLogger().log(Level.FINEST, String.format("of %d\n", file.getLength() ) );
+			Wilkins.getLogger().log(Level.FINEST, String.format("of %d", file.getLength() ) );
 		}
 		ArrayList<BlockList> allLists = new ArrayList<>();
 		for (BlockedFile file : allFiles) {
