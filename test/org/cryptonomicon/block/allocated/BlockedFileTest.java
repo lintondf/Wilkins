@@ -5,16 +5,24 @@ package org.cryptonomicon.block.allocated;
 
 import static org.junit.Assert.*;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.util.Arrays;
 import java.util.Random;
 
+import org.apache.commons.io.IOUtils;
+import org.cryptonomicon.Wilkins;
 import org.cryptonomicon.block.Block;
 import org.cryptonomicon.block.BlockedFile;
 import org.cryptonomicon.block.BlockedFile.State;
 import org.cryptonomicon.block.allocated.AllocatedBlockedFile;
+import org.cryptonomicon.configuration.Configuration;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -89,27 +97,15 @@ public class BlockedFileTest {
 	 */
 	@Test
 	public void testGetInputStream() {
-		fail("Not yet implemented");
-	}
-
-	/**
-	 * Test method for {@link org.cryptonomicon.block.allocated.AllocatedBlockedFile#getOutputStream(java.io.OutputStream, byte[])}.
-	 */
-	@Test
-	public void testGetOutputStream() {
-		fail("Not yet implemented");
-	}
-
-	/**
-	 * Test method for {@link org.cryptonomicon.block.allocated.AllocatedBlockedFile#deflate(int)}.
-	 */
-	@Test
-	public void testDeflate() {
-		File file = null;
+		File inFile = null;
+		File outFile = null;
 		ByteArray salt = Jargon2.toByteArray( new byte[256/8] );
+		byte[] iv = new byte[Configuration.AES_IV_BYTES];
+
 		try {
-			file = File.createTempFile("testFileHeader", "bin");
-			RandomAccessFile raf = new RandomAccessFile( file, "rw" );
+			inFile = File.createTempFile("testFileHeaderIn", "bin");
+			outFile = File.createTempFile("testFileHeaderOut", "bin");
+			RandomAccessFile raf = new RandomAccessFile( inFile, "rw" );
 			byte[] block = new byte[Block.BLOCK_SIZE];
 			for (int i = 0; i < 3; i++) {
 				Arrays.fill( block, (byte) i );
@@ -119,25 +115,98 @@ public class BlockedFileTest {
 			raf.write(block, 0, 10);
 			raf.close();
 			
-			BlockedFile bf = new AllocatedBlockedFile( file, salt );
-			bf.deflate(6);
+			BlockedFile bf = new AllocatedBlockedFile( inFile, salt );
+			InputStream is = bf.getInputStream( new FileInputStream(inFile), iv);
+
+			byte[] result = IOUtils.toByteArray(is);
+			assertTrue( result.length == 48 );
+			final String expectedDE = "(48) 33bad306982656f13130872281a011ba219cf5d1cae77558c4bea09e772479e1bda20cd08c959e7a3d61e5236d2a5dec";
+			assertTrue( expectedDE.equals(Wilkins.toString(result)));
+			
+			ByteArrayOutputStream bos = new ByteArrayOutputStream();
+			OutputStream os = bf.getOutputStream(bos, iv);
+			os.write(result);
+			os.close();
+			
+			result = bos.toByteArray();
+			//System.out.println( Wilkins.toString(result));
+			
+			for (int i = 0; i < 3; i++) {
+				Arrays.fill( block, (byte) i );
+				byte[] expected = Arrays.copyOfRange(result, i*Block.BLOCK_SIZE, (i+1)*Block.BLOCK_SIZE);
+				assertTrue( Arrays.equals(block, expected));
+			}
+			Arrays.fill(block, (byte) 4 );
+			byte[] expected = Arrays.copyOfRange(result, 3*Block.BLOCK_SIZE, 10+3*Block.BLOCK_SIZE);
+			assertTrue( Arrays.equals(Arrays.copyOf(block, 10), expected));
 			
 		} catch (IOException e) {
 			e.printStackTrace();
 			fail( e.getMessage() );
 		} finally {
-			if (file != null) {
-				file.delete();
+			if (inFile != null) {
+				inFile.delete();
+			}
+			if (outFile != null) {
+				outFile.delete();
 			}
 		}
 	}
 
+	
 	/**
-	 * Test method for {@link org.cryptonomicon.block.allocated.AllocatedBlockedFile#inflate(java.io.File)}.
+	 * Test method for {@link org.cryptonomicon.block.allocated.AllocatedBlockedFile#deflate(int)}.
 	 */
 	@Test
-	public void testInflate() {
-		fail("Not yet implemented");
+	public void testDeflate() {
+		File inFile = null;
+		File outFile = null;
+		ByteArray salt = Jargon2.toByteArray( new byte[256/8] );
+		try {
+			inFile = File.createTempFile("testFileHeaderIn", "bin");
+			outFile = File.createTempFile("testFileHeaderOut", "bin");
+			RandomAccessFile raf = new RandomAccessFile( inFile, "rw" );
+			byte[] block = new byte[Block.BLOCK_SIZE];
+			for (int i = 0; i < 3; i++) {
+				Arrays.fill( block, (byte) i );
+				raf.write(block);
+			}
+			Arrays.fill(block, (byte) 4 );
+			raf.write(block, 0, 10);
+			raf.close();
+			
+			BlockedFile bf = new AllocatedBlockedFile( inFile, salt );
+			bf.deflate(6);
+			
+			assertTrue( bf.getState() == State.ZIPPED );
+			assertTrue( bf.getBlockList().size() == 1 );
+			assertTrue( bf.getBlockList().get(0).getCount() == 32 );
+			
+			bf.inflate(outFile);
+			byte[] result = IOUtils.toByteArray(new FileReader(outFile) );
+			//System.out.println(result.length);
+			assertTrue( result.length == 3*Block.BLOCK_SIZE + 10 );
+			
+			for (int i = 0; i < 3; i++) {
+				Arrays.fill( block, (byte) i );
+				byte[] expected = Arrays.copyOfRange(result, i*Block.BLOCK_SIZE, (i+1)*Block.BLOCK_SIZE);
+				assertTrue( Arrays.equals(block, expected));
+			}
+			Arrays.fill(block, (byte) 4 );
+			byte[] expected = Arrays.copyOfRange(result, 3*Block.BLOCK_SIZE, 10+3*Block.BLOCK_SIZE);
+			assertTrue( Arrays.equals(Arrays.copyOf(block, 10), expected));
+			
+		} catch (IOException e) {
+			e.printStackTrace();
+			fail( e.getMessage() );
+		} finally {
+			if (inFile != null) {
+				inFile.delete();
+			}
+			if (outFile != null) {
+				outFile.delete();
+			}
+		}
 	}
 
 	/**
@@ -145,23 +214,66 @@ public class BlockedFileTest {
 	 */
 	@Test
 	public void testEncrypt() {
-		fail("Not yet implemented");
-	}
-
-	/**
-	 * Test method for {@link org.cryptonomicon.block.allocated.AllocatedBlockedFile#decrypt(byte[])}.
-	 */
-	@Test
-	public void testDecrypt() {
-		fail("Not yet implemented");
-	}
-
-	/**
-	 * Test method for {@link org.cryptonomicon.block.allocated.AllocatedBlockedFile#toString()}.
-	 */
-	@Test
-	public void testToString() {
-		fail("Not yet implemented");
+		File inFile = null;
+		File outFile = null;
+		ByteArray salt = Jargon2.toByteArray( new byte[256/8] );
+		try {
+			inFile = File.createTempFile("testFileHeaderIn", "bin");
+			outFile = File.createTempFile("testFileHeaderOut", "bin");
+			RandomAccessFile raf = new RandomAccessFile( inFile, "rw" );
+			byte[] iv = new byte[Configuration.AES_IV_BYTES];
+			byte[] block = new byte[Block.BLOCK_SIZE];
+			for (int i = 0; i < 3; i++) {
+				Arrays.fill( block, (byte) i );
+				raf.write(block);
+			}
+			Arrays.fill(block, (byte) 4 );
+			raf.write(block, 0, 10);
+			raf.close();
+			
+			BlockedFile bf = new AllocatedBlockedFile( inFile, salt );
+			bf.deflate(6);
+			
+			assertTrue( bf.getState() == State.ZIPPED );
+			assertTrue( bf.getBlockList().size() == 1 );
+			assertTrue( bf.getBlockList().get(0).getCount() == 32 );
+			
+			bf.encrypt(iv);
+			assertTrue( bf.getState() == State.ENCRYPTED );
+			assertTrue( bf.getBlockList().size() == 1 );
+			assertTrue( bf.getBlockList().get(0).getCount() == 48 );
+			
+			bf.decrypt(iv);
+			
+			assertTrue( bf.getState() == State.ZIPPED );
+			assertTrue( bf.getBlockList().size() == 1 );
+			assertTrue( bf.getBlockList().get(0).getCount() == 32 );
+			
+			bf.inflate(outFile);
+			byte[] result = IOUtils.toByteArray(new FileReader(outFile) );
+			//System.out.println(result.length + " " + Wilkins.toString(result));
+			assertTrue( result.length == 3*Block.BLOCK_SIZE + 10 );
+			
+			for (int i = 0; i < 3; i++) {
+				byte[] expected = Arrays.copyOfRange(result, i*Block.BLOCK_SIZE, (i+1)*Block.BLOCK_SIZE);
+				Arrays.fill( block, (byte) i );
+				assertTrue( Arrays.equals(block, expected));
+			}
+			Arrays.fill(block, (byte) 4 );
+			byte[] expected = Arrays.copyOfRange(result, 3*Block.BLOCK_SIZE, 10+3*Block.BLOCK_SIZE);
+			assertTrue( Arrays.equals(Arrays.copyOf(block, 10), expected));
+			
+		} catch (IOException e) {
+			e.printStackTrace();
+			fail( e.getMessage() );
+		} finally {
+			if (inFile != null) {
+				inFile.delete();
+			}
+			if (outFile != null) {
+				outFile.delete();
+			}
+		}
 	}
 
 }

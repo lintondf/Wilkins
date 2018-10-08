@@ -142,11 +142,11 @@ public class AllocatedBlockedFile implements BlockedFile {
 	@Override
 	public InputStream getInputStream(InputStream is, byte[] iv) {
 		try {
+			DeflaterInputStream dis = new DeflaterInputStream( is );
 			IvParameterSpec parameterSpec = new IvParameterSpec(iv);
 			cipher.init(Cipher.ENCRYPT_MODE, secretKey, parameterSpec);
-			CipherInputStream cis = new CipherInputStream( is, cipher );
-			DeflaterInputStream dis = new DeflaterInputStream( cis );
-			return dis;
+			CipherInputStream cis = new CipherInputStream( dis, cipher );
+			return cis;
 		} catch (Exception x) {
 			x.printStackTrace();
 			return null;
