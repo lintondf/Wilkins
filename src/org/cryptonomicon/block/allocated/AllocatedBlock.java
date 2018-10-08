@@ -16,6 +16,7 @@ public class AllocatedBlock implements Block {
 	
 	protected AllocatedBlock() {
 		contents = new byte[BLOCK_SIZE];
+		count = 0;
 	}
 	
 	protected AllocatedBlock( int count ) {
@@ -28,14 +29,15 @@ public class AllocatedBlock implements Block {
 		return new AllocatedBlock(count);
 	}
 	
+	public AllocatedBlock( byte[] data ) {
+		this();
+		this.contents = Arrays.copyOf( data, BLOCK_SIZE );
+		this.count = data.length;		
+	}
+	
 	protected AllocatedBlock( Block that) {
 		contents = Arrays.copyOf(that.getContents(), BLOCK_SIZE);
 		count = that.getCount();
-	}
-	
-	protected AllocatedBlock( byte[] test ) {
-		contents = Arrays.copyOf( test, BLOCK_SIZE );
-		count = test.length;
 	}
 	
 	public void pad() {

@@ -158,7 +158,7 @@ public class Wilkins {
 	    }
 	    logFileHandler.setFormatter(new ReportLogFormatter());
 	    logger.addHandler(logFileHandler);
-	    logger.setUseParentHandlers(false);  // no console logging
+	    logger.setUseParentHandlers(true);  // console logging
 	    Handler[] handlers = logger.getParent().getHandlers();
 	    for (Handler handler : handlers ) {
 	    	handler.setFormatter(new ReportLogFormatter());

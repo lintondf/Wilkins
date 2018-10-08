@@ -34,6 +34,7 @@ public class XorSet {
 	 * @param allFiles the all files
 	 */
 	public XorSet( int maxBlocks, ArrayList<BlockedFile> allFiles ) {
+		this.maxBlocks = maxBlocks;
 		ArrayList<BlockList> allLists = new ArrayList<>();
 		for (BlockedFile file : allFiles) {
 			allLists.add( file.getBlockList() );

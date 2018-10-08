@@ -9,7 +9,7 @@ import org.cryptonomicon.block.BlockReader;
 public class AllocatedBlockReader implements BlockReader {
 	RandomAccessFile    raf;
 	long                remaining;
-	AllocatedBlock               current;
+	AllocatedBlock      current;
 	
 	public AllocatedBlockReader( RandomAccessFile file, long length ) {
 		this.raf = file;
@@ -25,7 +25,7 @@ public class AllocatedBlockReader implements BlockReader {
 		long n = (remaining > Block.BLOCK_SIZE) ? Block.BLOCK_SIZE : remaining;
 		current.setCount(raf.read( current.getContents(), 0, (int) n ));
 		if (current.getCount() < 0)
-			current = null;
+			current.setCount(0);
 		remaining -= n;
 		return current;
 	}
@@ -38,7 +38,7 @@ public class AllocatedBlockReader implements BlockReader {
 		current = new AllocatedBlock();
 		current.setCount(raf.read( current.getContents(), 0, Block.BLOCK_SIZE ));
 		if (current.getCount() < 0)
-			current = null;
+			current.setCount(0);
 		remaining -= Block.BLOCK_SIZE;
 		return current;
 	}
