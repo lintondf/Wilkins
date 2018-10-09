@@ -5,9 +5,20 @@ package org.cryptonomicon.configuration;
 
 import static org.junit.Assert.*;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+
+import org.apache.commons.cli.Options;
+import org.cryptonomicon.configuration.KeyDerivationParameters.ArgonParameters;
+import org.cryptonomicon.configuration.KeyDerivationParameters.BCryptParameters;
+import org.cryptonomicon.configuration.KeyDerivationParameters.SCryptParameters;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.kosprov.jargon2.api.Jargon2.Type;
+import com.kosprov.jargon2.api.Jargon2.Version;
 
 /**
  * @author lintondf
@@ -30,27 +41,17 @@ public class KeyDerivationParametersTest {
 	}
 
 	/**
-	 * Test method for {@link org.cryptonomicon.configuration.KeyDerivationParameters#toString()}.
-	 */
-	@Test
-	public void testToString() {
-		fail("Not yet implemented");
-	}
-
-	/**
 	 * Test method for {@link org.cryptonomicon.configuration.KeyDerivationParameters#addOptions(org.apache.commons.cli.Options)}.
 	 */
 	@Test
 	public void testAddOptions() {
-		fail("Not yet implemented");
-	}
-
-	/**
-	 * Test method for {@link org.cryptonomicon.configuration.KeyDerivationParameters#set(org.apache.commons.cli.CommandLine)}.
-	 */
-	@Test
-	public void testSet() {
-		fail("Not yet implemented");
+		Options options = new Options();
+		Configuration configuration = new Configuration();
+		KeyDerivationParameters kdp = KeyDerivationParameters.getDefaults(configuration);
+		kdp.addOptions(options);
+//		options.getOptions().forEach(System.out::println);
+//		System.out.println(options.getOptions().size());
+		assertTrue( options.getOptions().size() == 10 );
 	}
 
 	/**
@@ -58,7 +59,9 @@ public class KeyDerivationParametersTest {
 	 */
 	@Test
 	public void testGetKeySize() {
-		fail("Not yet implemented");
+		Configuration configuration = new Configuration();
+		KeyDerivationParameters kdp = KeyDerivationParameters.getDefaults(configuration);
+		assertTrue( kdp.getKeySize() == 256 );
 	}
 
 	/**
@@ -66,15 +69,14 @@ public class KeyDerivationParametersTest {
 	 */
 	@Test
 	public void testGetArgonParameters() {
-		fail("Not yet implemented");
-	}
-
-	/**
-	 * Test method for {@link org.cryptonomicon.configuration.KeyDerivationParameters#setArgonParameters(org.cryptonomicon.configuration.KeyDerivationParameters.ArgonParameters)}.
-	 */
-	@Test
-	public void testSetArgonParameters() {
-		fail("Not yet implemented");
+		Configuration configuration = new Configuration();
+		KeyDerivationParameters kdp = KeyDerivationParameters.getDefaults(configuration);
+		ArgonParameters ap = kdp.getArgonParameters();
+		assertTrue( ap.getType() == Type.ARGON2id);
+		assertTrue( ap.getVersion() == Version.V13 );
+		assertTrue( ap.getMemoryCost() == 16*1024 );
+		assertTrue( ap.getTimeCost() == 32 );
+		assertTrue( ap.getParallelism() == 2 );
 	}
 
 	/**
@@ -82,15 +84,10 @@ public class KeyDerivationParametersTest {
 	 */
 	@Test
 	public void testGetBCryptParameters() {
-		fail("Not yet implemented");
-	}
-
-	/**
-	 * Test method for {@link org.cryptonomicon.configuration.KeyDerivationParameters#setBCryptParameters(org.cryptonomicon.configuration.KeyDerivationParameters.BCryptParameters)}.
-	 */
-	@Test
-	public void testSetBCryptParameters() {
-		fail("Not yet implemented");
+		Configuration configuration = new Configuration();
+		KeyDerivationParameters kdp = KeyDerivationParameters.getDefaults(configuration);
+		BCryptParameters bp = kdp.getBCryptParameters();
+		assertTrue( bp.getRounds() == 14 );
 	}
 
 	/**
@@ -98,15 +95,12 @@ public class KeyDerivationParametersTest {
 	 */
 	@Test
 	public void testGetSCryptParameters() {
-		fail("Not yet implemented");
-	}
-
-	/**
-	 * Test method for {@link org.cryptonomicon.configuration.KeyDerivationParameters#setSCryptParameters(org.cryptonomicon.configuration.KeyDerivationParameters.SCryptParameters)}.
-	 */
-	@Test
-	public void testSetSCryptParameters() {
-		fail("Not yet implemented");
+		Configuration configuration = new Configuration();
+		KeyDerivationParameters kdp = KeyDerivationParameters.getDefaults(configuration);
+		SCryptParameters sp = kdp.getSCryptParameters();
+		assertTrue( sp.getN() == 32*1024 );
+		assertTrue( sp.getR() == 4 );
+		assertTrue( sp.getP() == 32 );
 	}
 
 	/**
@@ -114,7 +108,9 @@ public class KeyDerivationParametersTest {
 	 */
 	@Test
 	public void testKeyDerivationParametersConfigurationInt() {
-		fail("Not yet implemented");
+		Configuration configuration = new Configuration();
+		KeyDerivationParameters kdp = new KeyDerivationParameters(configuration, 128);
+		assertTrue( kdp.getKeySize() == 128 );
 	}
 
 	/**
@@ -122,23 +118,21 @@ public class KeyDerivationParametersTest {
 	 */
 	@Test
 	public void testKeyDerivationParametersConfigurationInputStream() {
-		fail("Not yet implemented");
-	}
-
-	/**
-	 * Test method for {@link org.cryptonomicon.configuration.KeyDerivationParameters#write(java.io.OutputStream)}.
-	 */
-	@Test
-	public void testWrite() {
-		fail("Not yet implemented");
-	}
-
-	/**
-	 * Test method for {@link org.cryptonomicon.configuration.KeyDerivationParameters#getDefaults(org.cryptonomicon.configuration.Configuration)}.
-	 */
-	@Test
-	public void testGetDefaults() {
-		fail("Not yet implemented");
+		Configuration configuration = new Configuration();
+		KeyDerivationParameters kdp = KeyDerivationParameters.getDefaults(configuration);
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		try {
+			kdp.write( bos );
+		} catch (IOException e) {
+			fail(e.getMessage() );
+		}
+		ByteArrayInputStream bis = new ByteArrayInputStream( bos.toByteArray() );
+		try {
+			KeyDerivationParameters kdp2 = new KeyDerivationParameters(configuration, bis);
+			assertTrue( kdp.toString().equals(kdp2.toString()));
+		} catch (IOException e) {
+			fail(e.getMessage() );
+		}
 	}
 
 }
