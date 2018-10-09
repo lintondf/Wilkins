@@ -5,9 +5,6 @@ package org.cryptonomicon;
 
 import static org.junit.Assert.*;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -18,29 +15,73 @@ import org.junit.Test;
  */
 public class MainTest {
 
-	private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
-	private final ByteArrayOutputStream errContent = new ByteArrayOutputStream();
-	private final PrintStream originalOut = System.out;
-	private final PrintStream originalErr = System.err;
-
+	/**
+	 * @throws java.lang.Exception
+	 */
 	@Before
-	public void setUpStreams() {
-	    System.setOut(new PrintStream(outContent));
-	    System.setErr(new PrintStream(errContent));
+	public void setUp() throws Exception {
 	}
 
+	/**
+	 * @throws java.lang.Exception
+	 */
 	@After
-	public void restoreStreams() {
-	    System.setOut(originalOut);
-	    System.setErr(originalErr);
+	public void tearDown() throws Exception {
 	}
-	
-	
+
+	/**
+	 * Test method for {@link org.cryptonomicon.Main#processHelp(org.apache.commons.cli.Options)}.
+	 */
+	@Test
+	public void testProcessHelp() {
+		fail("Not yet implemented");
+	}
+
+	/**
+	 * Test method for {@link org.cryptonomicon.Main#addCommandLinePasswords(org.apache.commons.cli.CommandLine)}.
+	 */
+	@Test
+	public void testAddCommandLinePasswords() {
+		fail("Not yet implemented");
+	}
+
+	/**
+	 * Test method for {@link org.cryptonomicon.Main#addFiles(org.apache.commons.cli.CommandLine)}.
+	 */
+	@Test
+	public void testAddFiles() {
+		fail("Not yet implemented");
+	}
+
+	/**
+	 * Test method for {@link org.cryptonomicon.Main#inputPasswords(org.apache.commons.cli.CommandLine)}.
+	 */
+	@Test
+	public void testInputPasswords() {
+		fail("Not yet implemented");
+	}
+
+	/**
+	 * Test method for {@link org.cryptonomicon.Main#Main(org.cryptonomicon.configuration.Configuration, org.apache.commons.cli.Options, java.lang.String[])}.
+	 */
+	@Test
+	public void testMain() {
+		fail("Not yet implemented");
+	}
+
+	/**
+	 * Test method for {@link org.cryptonomicon.Main#getOptions()}.
+	 */
+	@Test
+	public void testGetOptions() {
+		fail("Not yet implemented");
+	}
+
 	/**
 	 * Test method for {@link org.cryptonomicon.Main#main(java.lang.String[])}.
 	 */
 	@Test
-	public void testMain() {
+	public void testMain1() {
 		fail("Not yet implemented");
 	}
 

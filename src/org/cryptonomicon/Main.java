@@ -41,7 +41,7 @@ public class Main {
 	protected static final String FILE_PASSWORDS = "file-passwords";
 	
 	
-	protected static void processHelp(Options options) {
+	protected void processHelp(Options options) {
     	// automatically generate the help statement
     	HelpFormatter formatter = new HelpFormatter();
     	formatter.setWidth(80);
@@ -67,24 +67,45 @@ public class Main {
     	formatter.printHelp( HELP_PREAMBLE, options );
 	}
 	
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) {
-//		for (Type version : Type.values() ) {
-//			System.out.println(version.name());
-//		}
-//		System.out.println( Execute.run("/usr/local/bin/gpg --help") );
-		Configuration configuration = new Configuration();
-		Options options = new Options();
-		options.addOption(null, FILE_PASSWORDS, true, "[passphrase1,passphrase2,...]");
-		options.getOption(FILE_PASSWORDS).setArgs(Option.UNLIMITED_VALUES);
-		options.getOption(FILE_PASSWORDS).setValueSeparator(',');
-		options.addOption("h", "help", false, "print these instructions");
-		options.addRequiredOption("o", "output-file", true, "output file path");
-
-		configuration.addOptions( options );
-		
+	protected void addCommandLinePasswords( CommandLine line ) {
+        String[] values = line.getOptionValues(FILE_PASSWORDS);
+        for (String value : values)  {
+        	passwords.add( Jargon2.toByteArray(value.toCharArray()).finalizable().clearSource() );
+        }
+	}
+	
+	protected String addFiles( CommandLine line ) {
+		for (String filePath : line.getArgList()) {
+			File file = new File(filePath);
+			if (file.exists() && file.isFile()) {
+				files.add(file);
+			} else {
+				return filePath;
+			}
+		}
+		return null;
+	}
+	
+	protected void inputPasswords( CommandLine line ) {
+        for (String fileName : line.getArgs() ) {
+        	System.out.printf("For file %s\n", fileName );
+        	char[] passwordArray;
+        	while (true) {
+        		passwordArray = System.console().readPassword("Enter passphrase: ");
+        		char check[] = System.console().readPassword("Reenter passphrase: ");
+        		if (Arrays.equals(passwordArray, check)) {
+		        	Arrays.fill(check, ' ');
+        			break;
+        		}
+        	}
+        	passwords.add( Jargon2.toByteArray(passwordArray).finalizable().clearSource() );
+        }
+	}
+	
+    protected ArrayList<ByteArray> passwords = new ArrayList<>();
+    protected ArrayList<File>   files = new ArrayList<>();
+    
+	public Main( Configuration configuration, Options options, String[] args ) {
 	    CommandLineParser parser = new DefaultParser();
 	    try {
 	        // parse the command line arguments
@@ -93,43 +114,22 @@ public class Main {
 	        	processHelp( options );
 	        }
 	        
-	        ArrayList<ByteArray> passwords = new ArrayList<>();
-	        ArrayList<File>   files = new ArrayList<>();
-	        
 	        if ( line.hasOption( FILE_PASSWORDS ) ) {
 	        	System.out.println("Wilkins Haystack WARNING: use of command line passwords is rarely wise.");
-	            // initialize the member variable
-	            String[] values = line.getOptionValues(FILE_PASSWORDS);
-	            for (String value : values) 
-	            	passwords.add( Jargon2.toByteArray(value.toCharArray()).finalizable().clearSource() );
+	        	addCommandLinePasswords( line );
 	        }
 	        
 			configuration.set(line);
 			
-			for (String filePath : line.getArgList()) {
-				File file = new File(filePath);
-				if (file.exists() && file.isFile()) {
-					files.add(file);
-				} else {
-					System.err.printf("Wilkins Haystack ERROR: file not found: %s", filePath );
-					System.exit(1);
-				}
+			String badPath = addFiles( line );
+	
+			if ( badPath != null  ) {
+				System.err.printf("Wilkins Haystack ERROR: file not found: %s", badPath );
+				System.exit(1);				
 			}
 			
 			if (passwords.isEmpty()) {
-		        for (String fileName : line.getArgs() ) {
-		        	System.out.printf("For file %s\n", fileName );
-		        	char[] passwordArray;
-		        	while (true) {
-		        		passwordArray = System.console().readPassword("Enter passphrase: ");
-		        		char check[] = System.console().readPassword("Reenter passphrase: ");
-		        		if (Arrays.equals(passwordArray, check)) {
-				        	Arrays.fill(check, ' ');
-		        			break;
-		        		}
-		        	}
-		        	passwords.add( Jargon2.toByteArray(passwordArray).finalizable().clearSource() );
-		        }
+				inputPasswords( line );
 			}
 			
 			// if the user entered command line passwords they counts must match
@@ -145,5 +145,26 @@ public class Main {
 	    } catch ( ConfigurationError exp ) {
 	        System.err.println( "Wilkins Haystack ERROR: configuration failed.  Reason: " + exp.getMessage() );
 	    }
+	}
+	
+	
+	protected static Options getOptions() {
+		Options options = new Options();
+		options.addOption(null, FILE_PASSWORDS, true, "[passphrase1,passphrase2,...]");
+		options.getOption(FILE_PASSWORDS).setArgs(Option.UNLIMITED_VALUES);
+		options.getOption(FILE_PASSWORDS).setValueSeparator(',');
+		options.addOption("h", "help", false, "print these instructions");
+		options.addRequiredOption("o", "output-file", true, "output file path");
+		return options;
+	}
+	
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		Configuration configuration = new Configuration();
+		Options options = getOptions();
+		configuration.addOptions( options );
+		Main main = new Main( configuration, options, args );
 	}
 }
