@@ -109,8 +109,10 @@ public class KeyDerivationParametersTest {
 	@Test
 	public void testKeyDerivationParametersConfigurationInt() {
 		Configuration configuration = new Configuration();
-		KeyDerivationParameters kdp = new KeyDerivationParameters(configuration, 128);
+		KeyDerivationParameters kdp = new KeyDerivationParameters(configuration, 128, 10000);
+		
 		assertTrue( kdp.getKeySize() == 128 );
+		assertTrue( kdp.getPbkdf2Iterations() == 10000);
 	}
 
 	/**

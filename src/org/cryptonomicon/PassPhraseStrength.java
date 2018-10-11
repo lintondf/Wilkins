@@ -34,7 +34,7 @@ public class PassPhraseStrength {
 	Nbvcxz checker = new Nbvcxz();
 	
 	public PassPhraseStrength() {
-		Result result = checker.estimate("reclusive-divorcee-lands-with-jolt");
+		Result result = checker.estimate("reclusive-divorcee-lands");
 		System.out.println( report(result) );
 		for (int i = 0; i < 10; i++) {
 			String pass1 = Generator.generatePassphrase("-", 4);
@@ -53,7 +53,7 @@ public class PassPhraseStrength {
 		BigDecimal crackTimeYears = crackTimeSecs.divide( new BigDecimal( 364.25 * 86400.0 ), RoundingMode.CEILING );
 		System.out.println( crackTimeYears.doubleValue());
 		System.out.println( result.getEntropy() );
-
+		
 		// Check if the password met the minimum set within the configuration
 		if(result.isMinimumEntropyMet())
 		{

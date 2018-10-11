@@ -96,6 +96,10 @@ public class Configuration {
 		public int getMaxValue() {
 			return maxValue;
 		}
+
+		public String getOptionValue(CommandLine line) {
+			return line.getOptionValue(getOptionName());
+		}
 	}
 	
 	public Configuration() {

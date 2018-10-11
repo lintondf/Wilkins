@@ -31,6 +31,9 @@ public class KeyDerivationParameters {
 	/** The key size. */
 	protected int keySize;
 	
+	/** PBKDF2 iterations. */
+	protected int pbkdf2Iterations;
+	
 	/** The argon parameters. */
 	protected KeyDerivationParameters.ArgonParameters argonParameters = null;
 	
@@ -42,13 +45,16 @@ public class KeyDerivationParameters {
 	
 	protected static final Configuration.Parameter DERIVATION_KEY_LENGTH = 
 			new Parameter("derivation-key-length", "cryptographic key length in bits", 256, 128, 256 );
+	
+	protected static final Configuration.Parameter PBKDF2_ITERATIONS = 
+			new Parameter("pbkdf2-iterations", "PBKDF2 iterations", 20_000, 10_000, 1_000_000 );
 
 	protected static final Configuration.Parameter ARGON_MEMORY_COST  = 
 			new Parameter("argon-memory-cost", "ARGON2 memory cost in KB", 16*1024, 1*1024, 1024*1024 );
 	protected static final Configuration.Parameter ARGON_TIME_COST = 
-			new Parameter("argon-timeCost", "Argon2 timeCost", 32, 0, 1024 ); 
+			new Parameter("argon-timeCost", "Argon2 timeCost", 64, 0, 1024 ); 
 	protected static final Configuration.Parameter ARGON_PARALLELISM = 
-			new Parameter("argon-parallelism", "Argon2 parallelism", 2, 1, 128 );
+			new Parameter("argon-parallelism", "Argon2 parallelism", 4, 1, 128 );
 	
 	protected static final Configuration.Parameter BCRYPT_ROUNDS = 
 			new Parameter("bcrypt-rounds", "BCRYPT rounds <integer>", 14, 0, 128 );
@@ -56,13 +62,14 @@ public class KeyDerivationParameters {
 	protected static final Configuration.Parameter SCRYPT_N = 
 			new Parameter("scrypt-n", "SCRYPT N <integer>", 32*1024, 0, 128*1024 );
 	protected static final Configuration.Parameter SCRYPT_r = 
-			new Parameter("scrypt-r", "SCRYPT r <integer>", 4, 0, 128 );
+			new Parameter("scrypt-r", "SCRYPT r <integer>", 2, 0, 128 );
 	protected static final Configuration.Parameter SCRYPT_p = 
-			new Parameter("scrypt-p", "SCRYPT p <integer>", 32, 0, 64 );
+			new Parameter("scrypt-p", "SCRYPT p <integer>", 16, 0, 64 );
 	
 	public String toString() {
 		StringBuffer sb = new StringBuffer();
 		sb.append(String.format("KeyDerivationParameters.keysize = %d\n", keySize) );
+		sb.append(String.format("KeyDerivationParameters.PBKDF2.iterations = %d\n", pbkdf2Iterations) );
 		sb.append( this.argonParameters.toString() );
 		sb.append( this.bCryptParameters.toString() );
 		sb.append( this.sCryptParameters.toString() );
@@ -72,6 +79,7 @@ public class KeyDerivationParameters {
 	
 	public void addOptions(Options options) {
 		options.addOption("k", DERIVATION_KEY_LENGTH.getOptionName(), true, DERIVATION_KEY_LENGTH.getHelpMessage());
+		options.addOption(null, PBKDF2_ITERATIONS.getOptionName(), true, PBKDF2_ITERATIONS.getHelpMessage());
 		this.argonParameters.addOptions(options);
 		this.bCryptParameters.addOptions(options);
 		this.sCryptParameters.addOptions(options);
@@ -79,13 +87,16 @@ public class KeyDerivationParameters {
 	
 	public void set(CommandLine line) throws ConfigurationError {
 		if (line.hasOption(DERIVATION_KEY_LENGTH.getOptionName())) {
-			String value = line.getOptionValue(DERIVATION_KEY_LENGTH.getOptionName());
-			int keyLength = Integer.parseInt( value );
+			int keyLength = Configuration.optionAsInteger(line, DERIVATION_KEY_LENGTH);
 			if (keyLength == DERIVATION_KEY_LENGTH.getMinValue() || keyLength == DERIVATION_KEY_LENGTH.getMaxValue()) {
 				this.keySize = keyLength;
 			} else {
-				throw new Configuration.ConfigurationError(DERIVATION_KEY_LENGTH.getOptionName(), value, "Key length must be 128 or 256");
+				throw new Configuration.ConfigurationError(DERIVATION_KEY_LENGTH.getOptionName(), 
+						DERIVATION_KEY_LENGTH.getOptionValue(line), "Key length must be 128 or 256");
 			}
+		}
+		if (line.hasOption(PBKDF2_ITERATIONS.getOptionName())) {
+			this.pbkdf2Iterations = Configuration.optionAsInteger( line, PBKDF2_ITERATIONS );
 		}
 		this.argonParameters.set(line);
 		this.bCryptParameters.set(line);
@@ -99,6 +110,21 @@ public class KeyDerivationParameters {
 	 */
 	public int getKeySize() {
 		return keySize;
+	}
+
+	/**
+	 * @return the pbkdf2Iterations
+	 */
+	public int getPbkdf2Iterations() {
+		return pbkdf2Iterations;
+	}
+
+
+	/**
+	 * @param pbkdf2Iterations the pbkdf2Iterations to set
+	 */
+	public void setPbkdf2Iterations(int pbkdf2Iterations) {
+		this.pbkdf2Iterations = pbkdf2Iterations;
 	}
 
 	/**
@@ -159,10 +185,12 @@ public class KeyDerivationParameters {
 	 * Instantiates a new key derivation parameters.
 	 *
 	 * @param keySize the key size
+	 * @param iterations 
 	 */
-	public KeyDerivationParameters( Configuration configuration, int keySize ) {
+	public KeyDerivationParameters( Configuration configuration, int keySize, int iterations ) {
 		this.configuration = configuration;
 		this.keySize = keySize;
+		this.pbkdf2Iterations = iterations;
 	}
 	
 	/**
@@ -174,6 +202,7 @@ public class KeyDerivationParameters {
 	public KeyDerivationParameters( Configuration configuration, InputStream bis ) throws IOException {
 		this.configuration = configuration;
 		this.keySize = configuration.readMaskedInt(bis, DERIVATION_KEY_LENGTH);
+		this.pbkdf2Iterations = configuration.readMaskedInt(bis, PBKDF2_ITERATIONS );
 		this.argonParameters = new ArgonParameters(bis);
 		this.bCryptParameters = new BCryptParameters(bis);
 		this.sCryptParameters = new SCryptParameters(bis);
@@ -187,6 +216,7 @@ public class KeyDerivationParameters {
 	 */
 	public void write( OutputStream bos ) throws IOException {
 		configuration.writeMaskedInt(bos, keySize, DERIVATION_KEY_LENGTH);
+		configuration.writeMaskedInt(bos, pbkdf2Iterations, PBKDF2_ITERATIONS);
 		this.argonParameters.write(bos);
 		this.bCryptParameters.write(bos);
 		this.sCryptParameters.write(bos);
@@ -198,7 +228,7 @@ public class KeyDerivationParameters {
 	 * @return the defaults
 	 */
 	public static KeyDerivationParameters getDefaults(Configuration configuration) {
-		KeyDerivationParameters parameters = new KeyDerivationParameters(configuration, DERIVATION_KEY_LENGTH.getDefaultValue() );
+		KeyDerivationParameters parameters = new KeyDerivationParameters(configuration, DERIVATION_KEY_LENGTH.getDefaultValue(), PBKDF2_ITERATIONS.getDefaultValue() );
 		parameters.setArgonParameters( parameters.new ArgonParameters() );
 		parameters.setBCryptParameters( parameters.new BCryptParameters() );
 		parameters.setSCryptParameters( parameters.new SCryptParameters() );

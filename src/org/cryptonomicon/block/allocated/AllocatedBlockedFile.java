@@ -37,20 +37,14 @@ import com.kosprov.jargon2.api.Jargon2.ByteArray;
  * organized as a BlockList.  Cryptographic keys for the content are stored
  * and used.
  */
-public class AllocatedBlockedFile implements BlockedFile {
+public class AllocatedBlockedFile extends BlockedFile {
 	
 	/** The source file. Null if random content. */
 	private File file;
 	
-	/** The secret key. */
-	private SecretKey secretKey; 
-	
 	/** The length. */
 	private long length;
 
-	/** The content state. */
-	private State state;
-	
 	/** The list of blocks. */
 	private AllocatedBlockList blocks;
 	
@@ -62,22 +56,6 @@ public class AllocatedBlockedFile implements BlockedFile {
 		return blocks;
 	}
 	
-	/** The cipher. */
-	protected static Cipher cipher = null;
-	
-	/**
-	 * Default constructor for a new blocked file.  Handles static initialization.
-	 * Use this() required in all public constructors.
-	 */
-	private AllocatedBlockedFile() {
-		if (cipher == null)	try {
-			cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-		} catch (Exception x) {
-			x.printStackTrace();
-		}
-	}
-
-
 	/**
 	 * Instantiates a new blocked file from file content.
 	 *
@@ -85,7 +63,7 @@ public class AllocatedBlockedFile implements BlockedFile {
 	 * @param key the cryptographic key
 	 */
 	public AllocatedBlockedFile(File f, ByteArray key) {
-		this();
+		super();
 		file = f;
 		secretKey = new SecretKeySpec(key.getBytes(), "AES");
 		length = f.length();
@@ -100,7 +78,7 @@ public class AllocatedBlockedFile implements BlockedFile {
 	 * @param nBlocks the n blocks
 	 */
 	public AllocatedBlockedFile(ByteArray key, int nBlocks) {
-		this();
+		super();
 		file = null;
 		secretKey = new SecretKeySpec(key.getBytes(), "AES");
 		length = nBlocks * Block.BLOCK_SIZE;
@@ -116,7 +94,7 @@ public class AllocatedBlockedFile implements BlockedFile {
 	 * @param key the cryptographic key
 	 */
 	public AllocatedBlockedFile( byte[] contents, ByteArray key ) {
-		this();
+		super();
 		file = null;
 		secretKey = new SecretKeySpec(key.getBytes(), "AES");
 		length = contents.length;
@@ -136,45 +114,6 @@ public class AllocatedBlockedFile implements BlockedFile {
 		length = Block.BLOCK_SIZE * count;
 	}
 	
-	/* (non-Javadoc)
-	 * @see org.cryptonomicon.block.BlockedFile#getInputStream(java.io.InputStream, byte[])
-	 */
-	@Override
-	public InputStream getInputStream(InputStream is, byte[] iv) {
-		try {
-			DeflaterInputStream dis = new DeflaterInputStream( is );
-			IvParameterSpec parameterSpec = new IvParameterSpec(iv);
-			cipher.init(Cipher.ENCRYPT_MODE, secretKey, parameterSpec);
-			CipherInputStream cis = new CipherInputStream( dis, cipher );
-			return cis;
-		} catch (Exception x) {
-			x.printStackTrace();
-			return null;
-		}
-		
-	}
-	
-	/* (non-Javadoc)
-	 * @see org.cryptonomicon.block.BlockedFile#getOutputStream(java.io.OutputStream, byte[])
-	 */
-	@Override
-	public OutputStream getOutputStream(OutputStream os, byte[] iv) {
-		if (state == State.RAW)
-			return os;
-		OutputStream ios = new InflaterOutputStream( os );
-		if (state == State.ZIPPED)
-			return ios;
-		try {
-			IvParameterSpec parameterSpec = new IvParameterSpec(iv);
-			cipher.init(Cipher.DECRYPT_MODE, secretKey, parameterSpec);
-			CipherOutputStream cos = new CipherOutputStream( ios, cipher );
-			return cos;
-		} catch (Exception x) {
-			x.printStackTrace();
-			return null;
-		}
-	}
-
 	/* (non-Javadoc)
 	 * @see org.cryptonomicon.block.BlockedFile#deflate(int)
 	 */

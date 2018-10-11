@@ -3,14 +3,20 @@ package org.cryptonomicon.block;
 import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.zip.DeflaterInputStream;
+import java.util.zip.InflaterOutputStream;
 
+import javax.crypto.Cipher;
+import javax.crypto.CipherInputStream;
+import javax.crypto.CipherOutputStream;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
 
 // TODO: Auto-generated Javadoc
 /**
- * The Interface BlockedFile.
+ * The Abstract Class BlockedFile.
  */
-public interface BlockedFile {
+public abstract class BlockedFile {
 
 	/**
 	 * Enumeration of file states.
@@ -26,6 +32,29 @@ public interface BlockedFile {
 		 ENCRYPTED
 	};
 
+	/** The content state. */
+	protected State state;
+	
+	/** The secret key. */
+	protected SecretKey secretKey; 
+	
+	/** The cipher. */
+	protected static Cipher cipher = null;
+	
+	/**
+	 * Default constructor for a new blocked file.  Handles static initialization.
+	 * Use super() required in all public constructors.
+	 */
+	protected BlockedFile() {
+		state = State.IDLE;
+		if (cipher == null)	try {
+			cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+		} catch (Exception x) {
+			x.printStackTrace();
+		}
+	}
+
+
 	/**
 	 * Gets the block list.
 	 *
@@ -40,23 +69,38 @@ public interface BlockedFile {
 	 */
 	public abstract void pad(int count);
 
-	/**
-	 * Generates a chain of streams based the supplied input stream to encrypt and deflate the content.
-	 *
-	 * @param is the base InputStream
-	 * @param iv the AES initial value
-	 * @return the resulting input stream
-	 */
-	public abstract InputStream getInputStream(InputStream is, byte[] iv);
-
-	/**
-	 * Generates a chain of output streams ending with the suppled stream to decrypt and inflate the content.
-	 *
-	 * @param os the destination OutputStream
-	 * @param iv the AES initial value
-	 * @return the resulting output stream
-	 */
-	public abstract OutputStream getOutputStream(OutputStream os, byte[] iv);
+	public InputStream getInputStream(InputStream is, byte[] iv) {
+		try {
+			DeflaterInputStream dis = new DeflaterInputStream( is );
+			IvParameterSpec parameterSpec = new IvParameterSpec(iv);
+			cipher.init(Cipher.ENCRYPT_MODE, secretKey, parameterSpec);
+			CipherInputStream cis = new CipherInputStream( dis, cipher );
+			state = State.ENCRYPTED;
+			return cis;
+		} catch (Exception x) {
+			x.printStackTrace();
+			return null;
+		}
+		
+	}
+	
+	public OutputStream getOutputStream(OutputStream os, byte[] iv) {
+		if (state == State.RAW)
+			return os;
+		OutputStream ios = new InflaterOutputStream( os );
+		if (state == State.ZIPPED)
+			return ios;
+		try {
+			IvParameterSpec parameterSpec = new IvParameterSpec(iv);
+			cipher.init(Cipher.DECRYPT_MODE, secretKey, parameterSpec);
+			CipherOutputStream cos = new CipherOutputStream( ios, cipher );
+			state = State.RAW;
+			return cos;
+		} catch (Exception x) {
+			x.printStackTrace();
+			return null;
+		}
+	}
 
 	/**
 	 * Deflate the BlockedFile content.

@@ -11,18 +11,10 @@ import java.io.RandomAccessFile;
 import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.text.SimpleDateFormat;
 import java.util.Arrays;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
 import java.util.Random;
 import java.util.ArrayList;
-import java.util.logging.FileHandler;
-import java.util.logging.Formatter;
-import java.util.logging.Handler;
 import java.util.logging.Level;
-import java.util.logging.LogRecord;
-import java.util.logging.Logger;
 import java.util.zip.InflaterOutputStream;
 
 import javax.crypto.Cipher;
@@ -43,6 +35,7 @@ import org.cryptonomicon.mixers.ShuffledInterlaceMixer;
 import org.mindrot.BCrypt;
 
 import com.google.common.io.BaseEncoding;
+import com.google.common.primitives.Longs;
 import com.kosprov.jargon2.api.Jargon2;
 import com.kosprov.jargon2.api.Jargon2.ByteArray;
 import com.kosprov.jargon2.api.Jargon2.Hasher;
@@ -67,7 +60,7 @@ import com.lambdaworks.crypto.SCrypt;
  * XOR corresponding block.
  * 
  * 		ShuffledInterlaceMixer - Permutes the output/input order of the XOR-set 
- * block by block.
+ *                               block by block.
  * 
  * 		FullyPermutedMixer - Permutes the order and position of all XOR-set blocks.
  * 
@@ -87,112 +80,31 @@ public class Wilkins {
 	protected int hashLength = keyLength / 8;
 	private Cipher cipher;
 	
-	protected static Logger logger = Logger.getLogger("wilkins");
-	protected static FileHandler logFileHandler = null;
-	protected static SimpleDateFormat logTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-
-	public static Logger getLogger() {
-		return logger;
-	}
+	protected KeyDerivation keyDerivation;
 	
-	public static void setLevel(Level level) {
-		logger.setLevel(level);
-	}
-
-	protected Mixer mixer = new ShuffledInterlaceMixer();
+	protected Mixer mixer;
 	
-	protected Configuration configuration = new Configuration();
-	protected KeyDerivationParameters parameters = KeyDerivationParameters.getDefaults(configuration);
-
-	protected Hasher defaultHasher =  com.kosprov.jargon2.api.Jargon2.jargon2Hasher()
-			.type(parameters.getArgonParameters().getType())
-			.version(parameters.getArgonParameters().getVersion())
-			.memoryCost(parameters.getArgonParameters().getMemoryCost())
-			.timeCost(parameters.getArgonParameters().getTimeCost())
-			.parallelism(parameters.getArgonParameters().getParallelism())
-			.hashLength(parameters.getKeySize()/8);
-	
-	
-	
-	/**
-	 * @return the defaultHasher
-	 */
-	public Hasher getDefaultHasher() {
-		return defaultHasher;
-	}
-
-	protected static class ReportLogFormatter extends Formatter {
-        @Override
-        public String format(LogRecord record) {
-            Calendar cal = new GregorianCalendar();
-            cal.setTimeInMillis(record.getMillis());
-            String msg = String.format("%-8s", record.getLevel()) + " , "
-                    + logTime.format(cal.getTime())
-                    + ", "
-                    + record.getSourceClassName().substring(
-                            record.getSourceClassName().lastIndexOf(".")+1,
-                            record.getSourceClassName().length())
-                    + "::"
-                    + record.getSourceMethodName()
-                    + ", "
-                    + record.getMessage() + "\n";
-            if (record.getThrown() != null) {
-            	StringBuffer sb = new StringBuffer();
-            	Throwable t = record.getThrown();
-            	sb.append( t.getMessage() );
-            	sb.append('\n');
-            	msg += sb.toString();
-            }
-            return msg;
-        }
-	}
-
-	
-	protected static void initializeLogging() {
-	    try {
-	        logFileHandler = new FileHandler("wilkins.log");
-//	        logFileHandler = new FileHandler("wilkins-%g.log", 1*1024*1024, 10);
-	    } catch (Exception e) {
-			getLogger().log(Level.SEVERE, "EXCEPTION: ", e );
-	        return;
-	    }
-	    logFileHandler.setFormatter(new ReportLogFormatter());
-	    logger.addHandler(logFileHandler);
-	    logger.setUseParentHandlers(true);  // console logging
-	    Handler[] handlers = logger.getParent().getHandlers();
-	    for (Handler handler : handlers ) {
-	    	handler.setFormatter(new ReportLogFormatter());
-	    }
-	    logger.setLevel(Level.ALL);  // changed by configuration
-	}
-
+	protected Configuration configuration;
+	protected KeyDerivationParameters parameters;
 
 			
-	public Wilkins() {
-		initializeLogging();
+	public Wilkins(Configuration configuration, Mixer mixer) {
+		Main.initializeLogging();
+		this.configuration = configuration;
+		this.parameters = configuration.getKeyDerivationParameters();
+		this.keyDerivation = new KeyDerivation(configuration);
 		try {
 			setCipher(Cipher.getInstance("AES/CBC/NoPadding"));
 		} catch (Exception e) {
-			getLogger().log(Level.SEVERE, "Unable to configure cryptography", e);
+			Main.getLogger().log(Level.SEVERE, "Unable to configure cryptography", e);
+			System.exit(0);
 		}
 	}
 	
-	public Wilkins( Mixer mixer) {
-		this();
-		this.mixer = mixer;
+	public Wilkins() {
+		this( new Configuration(), new ShuffledInterlaceMixer() );
 	}
 	
-	public Wilkins( Configuration configuration ) {
-		this();
-		this.configuration = configuration;
-		this.parameters = configuration.getKeyDerivationParameters();
-	}
-
-	public Wilkins( Configuration configuration, Mixer mixer ) {
-		this(configuration);
-		this.mixer = mixer;
-	}
-
 	/**
 	 * @return the cipher
 	 */
@@ -213,12 +125,10 @@ public class Wilkins {
 			if (!file.exists() && file.isFile() && file.length() > 0L)
 				return false;
 			//byte[] key = fileHeader.getHasher().password(passPhrase.getBytes()).rawHash();
-			ByteArray key = Jargon2.toByteArray(
-					deriveKey(passPhrase, fileHeader.getSalt() )
-					).finalizable().clearSource();
+			ByteArray key = keyDerivation.deriveKey(passPhrase, fileHeader.getSalt() );
 
 			AllocatedBlockedFile pair = new AllocatedBlockedFile(file, key);
-			getLogger().info(String.format("adding %-16s %s %s %d", path, toString(key.getBytes()), passPhrase, pair.getLength() ));
+			Main.getLogger().info(String.format("adding %-16s %s %s %d", path, toString(key.getBytes()), passPhrase, pair.getLength() ));
 			maxLength = Math.max(maxLength, pair.getLength());
 			dataFiles.add(pair);
 			return true;
@@ -247,7 +157,7 @@ public class Wilkins {
 		fillerCount = m;
 	}
 	
-	public boolean read( RandomAccessFile file, OutputStream os, ByteArray passPhrase ) throws IOException {
+	public boolean read( RandomAccessFile file, OutputStream os, ByteArray passPhrase ) throws IOException, GeneralSecurityException {
 		Configuration configuration = new Configuration();  // TODO hoist to class
 		InflaterOutputStream ios = new InflaterOutputStream( os );
 		
@@ -273,8 +183,8 @@ public class Wilkins {
 //		//System.out.printf("Key, Pass = %s %s\n", toString(key), passPhrase );
 //		SecretKey secretKey = new SecretKeySpec(key, "AES");
 		
-		byte[] key = deriveKey(passPhrase, fileHeader.getSalt() );
-		SecretKey secretKey = new SecretKeySpec(key, "AES");
+		ByteArray key = keyDerivation.deriveKey(passPhrase, fileHeader.getSalt() );
+		SecretKey secretKey = new SecretKeySpec(key.getBytes(), "AES");
 		
 		int fileIndex = 0;
 		PayloadFileGuidance targetGuidance = null;
@@ -373,7 +283,7 @@ public class Wilkins {
 		for (int i = 0; i < moduli.length; i++) {
 			moduli[i] = i;
 		}
-		moduli = permute( secureRandom, moduli );
+		moduli = Util.permute( secureRandom, moduli );
 		
 		// generate a common simpleRandom seed for block order permutations
 		long seed = secureRandom.nextLong() & 0xFFFFFFFFFFFFL;
@@ -406,29 +316,6 @@ public class Wilkins {
 		System.out.printf("%d  %d\n", maxLength, fillerCount);
 	}
 
-	public int[] permute( Random random, int[] array ) {
-		int n = array.length;
-		while (n > 1) {
-			int k = random.nextInt(n--); // decrements after using the value
-			int temp = array[n];
-			array[n] = array[k];
-			array[k] = temp;
-		}
-		return array;
-	}
-	
-	public <T> void permute( Random random, ArrayList<T> iterators ) {
-		int n = iterators.size();
-		while (n > 1) {
-			int k = random.nextInt(n--); // decrements after using the value
-			T temp = iterators.get(n);
-			iterators.set(n,  iterators.get(k) );
-			iterators.set(k,  temp);
-		}
-		
-	}
-	
-	
 	/**
 	 * @return the secureRandom
 	 */
@@ -627,160 +514,13 @@ public class Wilkins {
 		System.out.println(g.toString());		
 	}
 	
-    static final String algorithm = "PBKDF2WithHmacSHA1";
-    static SecretKeyFactory factory = null;
-    
-    protected static abstract class DerivationStep {
-    	
-    	protected int derivedKeyLength;
-    	
-    	public DerivationStep( int derivedKeyLength ) {
-    		this.derivedKeyLength = derivedKeyLength;
-    	}
-    	
-    	public abstract ByteArray derive( ByteArray password, ByteArray salt ) throws GeneralSecurityException;
-    }
-    
-    protected static class ArgonDerivationStep extends DerivationStep {
-    	
-    	protected Hasher hasher;
-    	
-    	public ArgonDerivationStep( Hasher hasher, int derivedKeyLength) {
-    		super(derivedKeyLength);
-    		this.hasher = hasher;
-    	}
-
-		@Override
-		public ByteArray derive(ByteArray password, ByteArray salt) {
-			return Jargon2.toByteArray( hasher.password(password).salt(salt).rawHash() );
-		}
-    }
-    
-    protected static class BCryptDerivationStep extends DerivationStep {
-
-    	protected BCrypt bCrypt = new BCrypt();
-    	protected int rounds;
-    	
-		public BCryptDerivationStep(int derivedKeyLength, int rounds ) {
-			super(derivedKeyLength);
-			this.rounds = rounds;
-		}
-
-		@Override
-		public ByteArray derive(ByteArray password, ByteArray salt) {
-			return Jargon2.toByteArray( bCrypt.crypt_raw(password.getBytes(), salt.getBytes(), rounds, BCrypt.getMagicNumbers() ) );
-		}
-    }
-    
-    protected static class SCryptDerivationStep extends DerivationStep {
-    	protected int N = 16*1024;
-    	protected int r = 8;
-    	protected int p = 2;
-
-		public SCryptDerivationStep(int derivedKeyLength, int N, int r, int p ) {
-			super(derivedKeyLength);
-			this.N = N;
-			this.r = r;
-			this.p = p;
-		}
-
-		@Override
-		public ByteArray derive(ByteArray password, ByteArray salt) throws GeneralSecurityException {
-			return Jargon2.toByteArray( SCrypt.scryptJ(password.getBytes(), salt.getBytes(), N, r, p, derivedKeyLength/8) );
-		}
-    }
-    
-    protected ArrayList<DerivationStep> derivationSteps = new ArrayList<>();
-    
-	public byte[] deriveKey( ByteArray password, ByteArray salt) {
-		derivationSteps.clear();
-		KeyDerivationParameters kdp = configuration.getKeyDerivationParameters();
-		ArgonDerivationStep argon = new ArgonDerivationStep(kdp.getArgonParameters().getHasher(salt), kdp.getKeySize());
-		derivationSteps.add(argon);
-		
-		ByteArray value  =  password;
-		for (DerivationStep step : derivationSteps) {
-			try {
-				value = step.derive(value, salt);
-			} catch (GeneralSecurityException e) {
-				e.printStackTrace();
-				return null;
-			}
-		}
-		return value.getBytes();
-		
-		//TODO: by 'color'
-		/*
-		 * Black - BCrypt' only
-		 * Red - SCrypt only
-		 * Orange - Argon2 only
-		 * Yellow - Scrypt+BCrypt'
-		 * Green - Argon2+Bcrypt
-		 * Blue - Argon2+Scrypt
-		 * Violet - Argon2+Scrypt+Bcrypt
-		 */
-//		if (factory == null) {
-//			try {
-//				factory = SecretKeyFactory.getInstance(algorithm);
-//			} catch (NoSuchAlgorithmException e) {
-//				e.printStackTrace();
-//				return null;
-//			}
-//		}
-//		if (false) {
-//			SecureRandom random = new SecureRandom();
-//			String password = "X$f314159aE";
-//			byte[] salt = new byte[16];
-//			random.nextBytes(salt);
-//			//int iterations = 20000;
-//			int derivedKeyLength = 256;
-//
-//			for (int i = 0; i < 10; i++ ) {
-//				long overall = System.nanoTime();
-//				long start = overall;
-//				BCrypt bCrypt = new BCrypt();
-//				byte[] bkey = bCrypt.crypt_raw(password.getBytes(), salt, 12, BCrypt.getMagicNumbers() );
-//				//System.out.printf("BCrypt %10.6f %s\n", 1e-9*(double)(System.nanoTime()-start), Wilkins.toString(bkey));
-//
-//				int N = 16*1024;
-//				int r = 8;
-//				int p = 2;
-//				start = System.nanoTime();
-//				try {
-//					byte[] skey = SCrypt.scryptJ(password.getBytes(), salt, N, r, p, derivedKeyLength/8);
-//					//System.out.printf("SCrypt %10.6f %s\n", 1e-9*(double)(System.nanoTime()-start), Wilkins.toString(skey));
-//				} catch (GeneralSecurityException e) {
-//					e.printStackTrace();
-//				}
-//				Wilkins wilkins = new Wilkins();
-//				start = System.nanoTime();
-//				byte[] key = Wilkins.deriveKey(wilkins.getDefaultHasher(), derivedKeyLength, password.toCharArray(), salt);
-//				//System.out.printf("Argon2 %10.6f %s\n", 1e-9*(double)(System.nanoTime()-start), Wilkins.toString(key));
-//				System.out.printf("TOTAL  %10.6f\n", 1e-9*(double)(System.nanoTime()-overall));
-//				}
-//		}
-// 		try {  // create cipher key
-//			ByteArray passwordBA = Jargon2.toByteArray(password).finalizable().clearSource();
-//			return hasher.password(passwordBA).salt(salt).rawHash();
-////	        final PBEKeySpec cipherSpec = new PBEKeySpec(password, salt, iterations, derivedKeyLength);
-////			Jargon2.toByteArray(password).clearSource().finalizable();
-////	        SecretKey cipherKey = factory.generateSecret(cipherSpec);
-////	        cipherSpec.clearPassword();
-////	        
-////	        return hasher.password(cipherKey.getEncoded()).salt(salt).rawHash();
-//		} catch (Exception x) {
-//			x.printStackTrace();
-//			return null;
-//		}
-		
-	}
 	
 	public static void main( String[] args ) {
 		//https://commons.apache.org/proper/commons-cli/usage.html
 		//test_fileGuidance( args );
 		//test_writeReadBlocks(args);
-		test_write(args);
-		test_read(args);
+//		test_write(args);
+//		test_read(args);
 	}
 
 }

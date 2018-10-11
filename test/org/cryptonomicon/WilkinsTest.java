@@ -14,7 +14,7 @@ import org.junit.Test;
 public class WilkinsTest {
 
 	/**
-	 * Test method for {@link org.cryptonomicon.Wilkins#getLogger()}.
+	 * Test method for {@link org.cryptonomicon.Main#getLogger()}.
 	 */
 	@Test
 	public void testGetLogger() {
@@ -22,7 +22,7 @@ public class WilkinsTest {
 	}
 
 	/**
-	 * Test method for {@link org.cryptonomicon.Wilkins#setLevel(java.util.logging.Level)}.
+	 * Test method for {@link org.cryptonomicon.Main#setLevel(java.util.logging.Level)}.
 	 */
 	@Test
 	public void testSetLevel() {
@@ -30,7 +30,7 @@ public class WilkinsTest {
 	}
 
 	/**
-	 * Test method for {@link org.cryptonomicon.Wilkins#initializeLogging()}.
+	 * Test method for {@link org.cryptonomicon.Main#initializeLogging()}.
 	 */
 	@Test
 	public void testInitializeLogging() {
@@ -126,7 +126,7 @@ public class WilkinsTest {
 	}
 
 	/**
-	 * Test method for {@link org.cryptonomicon.Wilkins#permute(java.util.Random, int[])}.
+	 * Test method for {@link org.cryptonomicon.Util#permute(java.util.Random, int[])}.
 	 */
 	@Test
 	public void testPermuteRandomIntArray() {
