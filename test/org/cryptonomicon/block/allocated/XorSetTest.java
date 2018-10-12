@@ -7,6 +7,7 @@ import static org.junit.Assert.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.cryptonomicon.block.Block;
 import org.cryptonomicon.block.BlockList;
@@ -48,7 +49,7 @@ public class XorSetTest {
 	 */
 	@Test
 	public void testXorSet() {
-		AllocatedBlockedFileList files = new AllocatedBlockedFileList();
+		ArrayList<BlockedFile> files = new ArrayList<>();
 		byte[] values = {(byte)0x1, (byte)0x2, (byte)0x4};
 		byte[] array = new byte[Block.BLOCK_SIZE];
 		ByteArray key = Jargon2.toByteArray( new byte[256/8] );
@@ -82,7 +83,7 @@ public class XorSetTest {
 	 */
 	@Test
 	public void testGetIterators() {
-		AllocatedBlockedFileList files = new AllocatedBlockedFileList();
+		List<BlockedFile> files = new ArrayList<>();
 		byte[] values = {(byte)0x1, (byte)0x2, (byte)0x4};
 		byte[] array = new byte[Block.BLOCK_SIZE];
 		ByteArray key = Jargon2.toByteArray( new byte[256/8] );

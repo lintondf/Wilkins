@@ -12,6 +12,7 @@ import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 import java.util.ArrayList;
 import java.util.logging.Level;
@@ -26,9 +27,7 @@ import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.cryptonomicon.block.BlockedFile;
-import org.cryptonomicon.block.BlockedFileList;
 import org.cryptonomicon.block.allocated.AllocatedBlockedFile;
-import org.cryptonomicon.block.allocated.AllocatedBlockedFileList;
 import org.cryptonomicon.configuration.Configuration;
 import org.cryptonomicon.configuration.KeyDerivationParameters;
 import org.cryptonomicon.configuration.KeyDerivationParameters.ArgonParameters;
@@ -72,8 +71,8 @@ import com.lambdaworks.crypto.SCrypt;
  */
 public class Wilkins {
 	
-	protected AllocatedBlockedFileList dataFiles = new AllocatedBlockedFileList();
-	protected AllocatedBlockedFileList fillerFiles = new AllocatedBlockedFileList();
+	protected List<BlockedFile> dataFiles = new ArrayList<>();
+	protected List<BlockedFile> fillerFiles = new ArrayList<>();
 	protected long maxLength = 0L;
 	protected int fillerCount = 3;
 	
@@ -223,7 +222,7 @@ public class Wilkins {
 		}
 	}
 	
-	AllocatedBlockedFileList allFiles = new AllocatedBlockedFileList();
+	List<BlockedFile> allFiles = new ArrayList<>();
 	int maxBlocks = 0;
 	
 	public boolean load( RandomAccessFile writer, FileHeader fileHeader ) throws IOException {

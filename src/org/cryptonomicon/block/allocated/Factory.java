@@ -6,6 +6,7 @@ package org.cryptonomicon.block.allocated;
 import java.io.File;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.cryptonomicon.block.Block;
 import org.cryptonomicon.block.BlockInputStream;
@@ -14,7 +15,6 @@ import org.cryptonomicon.block.BlockListIterator;
 import org.cryptonomicon.block.BlockMethodsFactory;
 import org.cryptonomicon.block.BlockReader;
 import org.cryptonomicon.block.BlockedFile;
-import org.cryptonomicon.block.BlockedFileList;
 import org.cryptonomicon.block.XorSet;
 
 import com.kosprov.jargon2.api.Jargon2.ByteArray;
@@ -78,9 +78,9 @@ public class Factory implements BlockMethodsFactory {
 	 * @see org.cryptonomicon.block.BlockMethodsFactory#getXorSetInstance()
 	 */
 	@Override
-	public XorSet getXorSetInstance( int maxBlocks, BlockedFileList allFiles ) {
+	public XorSet getXorSetInstance( int maxBlocks, List<BlockedFile> allFiles ) {
 		// TODO Auto-generated method stub
-		return new AllocatedXorSet( maxBlocks, (AllocatedBlockedFileList) allFiles );
+		return new AllocatedXorSet( maxBlocks, allFiles );
 	}
 
 }

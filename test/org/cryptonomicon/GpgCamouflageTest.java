@@ -62,7 +62,7 @@ public class GpgCamouflageTest {
 		File file = null;
 		try {
 			file = File.createTempFile("testFileHeader", ".gpg");
-			System.out.println( file.getAbsolutePath());
+			//System.out.println( file.getAbsolutePath());
 			RandomAccessFile raf = new RandomAccessFile(file, "rw");
 
 			GpgCamouflage gC = new GpgCamouflage(raf, 1000);

@@ -4,6 +4,7 @@
 package org.cryptonomicon.block.allocated;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.cryptonomicon.block.BlockList;
 import org.cryptonomicon.block.BlockListIterator;
@@ -36,10 +37,10 @@ public class AllocatedXorSet implements XorSet {
 	 * @param maxBlocks the max blocks
 	 * @param allFiles the all files
 	 */
-	public AllocatedXorSet( int maxBlocks, AllocatedBlockedFileList allFiles ) {
+	public AllocatedXorSet( int maxBlocks, List<BlockedFile> allFiles ) {
 		this.maxBlocks = maxBlocks;
 		ArrayList<BlockList> allLists = new ArrayList<>();
-		for (AllocatedBlockedFile file : allFiles.getFiles()) {
+		for (BlockedFile file : allFiles) {
 			allLists.add( file.getBlockList() );
 		}
 		xorOfAll = new AllocatedBlockList();

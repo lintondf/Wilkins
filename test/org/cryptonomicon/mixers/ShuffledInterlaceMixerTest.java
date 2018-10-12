@@ -11,6 +11,7 @@ import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
 import org.apache.commons.io.IOUtils;
@@ -20,7 +21,6 @@ import org.cryptonomicon.block.Block;
 import org.cryptonomicon.block.BlockedFile;
 import org.cryptonomicon.block.allocated.AllocatedBlock;
 import org.cryptonomicon.block.allocated.AllocatedBlockedFile;
-import org.cryptonomicon.block.allocated.AllocatedBlockedFileList;
 import org.cryptonomicon.mixers.ShuffledInterlaceMixer;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -151,6 +151,7 @@ public class ShuffledInterlaceMixerTest {
 			dummy.setState(BlockedFile.State.ZIPPED);
 		if (encrypt)
 			dummy.setState(BlockedFile.State.ENCRYPTED);
+		//System.out.println( deflate + " " + encrypt + " " + dummy.getState() );
 		
 		writeInputFile( inputs );
 		
@@ -163,7 +164,7 @@ public class ShuffledInterlaceMixerTest {
 				ByteArrayOutputStream bos = new ByteArrayOutputStream();
 				OutputStream cos = dummy.getOutputStream(bos, iv);
 				mixer.readBlocks( fileGuidance, random, raf, cos );
-				//System.out.println( i + ": " + Wilkins.toString(bos.toByteArray()) + " vs " + contentStrings[i] );
+				//System.out.println(i + ": " + Wilkins.toString(bos.toByteArray()) + " vs " + contentStrings[i] );
 				assertTrue( Arrays.equals(bos.toByteArray(), toBytes(contentStrings[i])));
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -179,7 +180,7 @@ public class ShuffledInterlaceMixerTest {
 		int maxBlocks = 1;
 		byte[] iv = new byte[16];
 		ByteArray key = Jargon2.toByteArray( new byte[16] ).finalizable();
-		AllocatedBlockedFileList allFiles = new AllocatedBlockedFileList();
+		List<BlockedFile> allFiles = new ArrayList<>();
 		ArrayList<byte[]> contentsList = new ArrayList<>();
 		for (String str : contentStrings) {
 			contentsList.add( toBytes(str) );

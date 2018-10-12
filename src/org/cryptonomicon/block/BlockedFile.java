@@ -94,7 +94,6 @@ public abstract class BlockedFile {
 			IvParameterSpec parameterSpec = new IvParameterSpec(iv);
 			cipher.init(Cipher.DECRYPT_MODE, secretKey, parameterSpec);
 			CipherOutputStream cos = new CipherOutputStream( ios, cipher );
-			state = State.RAW;
 			return cos;
 		} catch (Exception x) {
 			x.printStackTrace();
