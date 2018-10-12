@@ -218,12 +218,14 @@ public class Main {
 	
 	protected static Options getOptions() {
 		Options options = new Options();
+		options.addOption("c", "create", false, "create a haystack file (default)");
+		options.addOption("x", "extract", false, "extract a file from a haystack");
 		options.addOption(null, FILE_PASSWORDS, true, "[passphrase1,passphrase2,...]");
 		options.getOption(FILE_PASSWORDS).setArgs(Option.UNLIMITED_VALUES);
 		options.getOption(FILE_PASSWORDS).setValueSeparator(',');
 		options.addOption("h", "help", false, "print these instructions");
-		options.addRequiredOption("o", "output-file", true, "output file path");
-		// -c --straw-count number of random filler files (default is random 2..3xinput count)
+		options.addRequiredOption("o", "output-file", true, "output file path (implies create)");
+		// -n --straw-count number of random filler files (default is random 2..3xinput count)
 		// -s --size-multiplier (float) final file size multiplier
 		// --measure filename EXITS
 		// --check-passwords

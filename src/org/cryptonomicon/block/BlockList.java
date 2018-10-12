@@ -47,12 +47,5 @@ public interface BlockList {
 	 */
 	public abstract Block get( int which );
 
-	/**
-	 * Make.
-	 *
-	 * @return the block list
-	 */
-	public abstract BlockList make();
-
 
 }

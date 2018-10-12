@@ -24,6 +24,7 @@ import org.cryptonomicon.block.BlockList;
 import org.cryptonomicon.block.BlockListIterator;
 import org.cryptonomicon.block.BlockReader;
 import org.cryptonomicon.block.BlockedFile;
+import org.cryptonomicon.block.BlockedFileList;
 import org.cryptonomicon.block.allocated.AllocatedBlock;
 import org.cryptonomicon.block.allocated.AllocatedBlockList;
 import org.cryptonomicon.block.allocated.AllocatedBlockReader;
@@ -91,7 +92,7 @@ public class ShuffledInterlaceMixer implements Mixer {
 	 */
 	@Override
 	public boolean writeBlocks(Random random, int maxBlocks,
-			ArrayList<BlockedFile> allFiles, RandomAccessFile writer)
+			BlockedFileList allFiles, RandomAccessFile writer)
 			throws IOException {
 		// generate xor'd data blocks: {for-each-i {xor(all but i)}, xor all}
 		for (BlockedFile file : allFiles) {

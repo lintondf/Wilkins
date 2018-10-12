@@ -117,10 +117,4 @@ public class AllocatedBlockList implements BlockList {
 		return this;
 	}
 
-
-	@Override
-	public BlockList make() {
-		return new AllocatedBlockList();
-	}
-
 }

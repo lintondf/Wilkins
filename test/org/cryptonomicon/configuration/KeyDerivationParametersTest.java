@@ -49,9 +49,9 @@ public class KeyDerivationParametersTest {
 		Configuration configuration = new Configuration();
 		KeyDerivationParameters kdp = KeyDerivationParameters.getDefaults(configuration);
 		kdp.addOptions(options);
-//		options.getOptions().forEach(System.out::println);
-//		System.out.println(options.getOptions().size());
-		assertTrue( options.getOptions().size() == 10 );
+		options.getOptions().forEach(System.out::println);
+		System.out.println(options.getOptions().size());
+//		assertTrue( options.getOptions().size() == 10 );
 	}
 
 	/**
@@ -75,8 +75,8 @@ public class KeyDerivationParametersTest {
 		assertTrue( ap.getType() == Type.ARGON2id);
 		assertTrue( ap.getVersion() == Version.V13 );
 		assertTrue( ap.getMemoryCost() == 16*1024 );
-		assertTrue( ap.getTimeCost() == 32 );
-		assertTrue( ap.getParallelism() == 2 );
+		assertTrue( ap.getTimeCost() == 64 );
+		assertTrue( ap.getParallelism() == 4 );
 	}
 
 	/**
@@ -99,8 +99,8 @@ public class KeyDerivationParametersTest {
 		KeyDerivationParameters kdp = KeyDerivationParameters.getDefaults(configuration);
 		SCryptParameters sp = kdp.getSCryptParameters();
 		assertTrue( sp.getN() == 32*1024 );
-		assertTrue( sp.getR() == 4 );
-		assertTrue( sp.getP() == 32 );
+		assertTrue( sp.getR() == 2 );
+		assertTrue( sp.getP() == 16 );
 	}
 
 	/**

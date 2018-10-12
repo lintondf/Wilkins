@@ -26,7 +26,9 @@ import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.cryptonomicon.block.BlockedFile;
+import org.cryptonomicon.block.BlockedFileList;
 import org.cryptonomicon.block.allocated.AllocatedBlockedFile;
+import org.cryptonomicon.block.allocated.AllocatedBlockedFileList;
 import org.cryptonomicon.configuration.Configuration;
 import org.cryptonomicon.configuration.KeyDerivationParameters;
 import org.cryptonomicon.configuration.KeyDerivationParameters.ArgonParameters;
@@ -70,8 +72,8 @@ import com.lambdaworks.crypto.SCrypt;
  */
 public class Wilkins {
 	
-	protected ArrayList<AllocatedBlockedFile> dataFiles = new ArrayList<>();
-	protected ArrayList<AllocatedBlockedFile> fillerFiles = new ArrayList<>();
+	protected AllocatedBlockedFileList dataFiles = new AllocatedBlockedFileList();
+	protected AllocatedBlockedFileList fillerFiles = new AllocatedBlockedFileList();
 	protected long maxLength = 0L;
 	protected int fillerCount = 3;
 	
@@ -221,7 +223,7 @@ public class Wilkins {
 		}
 	}
 	
-	ArrayList<BlockedFile> allFiles = new ArrayList<>();
+	AllocatedBlockedFileList allFiles = new AllocatedBlockedFileList();
 	int maxBlocks = 0;
 	
 	public boolean load( RandomAccessFile writer, FileHeader fileHeader ) throws IOException {

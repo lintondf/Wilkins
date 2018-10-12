@@ -20,6 +20,7 @@ import org.cryptonomicon.block.Block;
 import org.cryptonomicon.block.BlockedFile;
 import org.cryptonomicon.block.allocated.AllocatedBlock;
 import org.cryptonomicon.block.allocated.AllocatedBlockedFile;
+import org.cryptonomicon.block.allocated.AllocatedBlockedFileList;
 import org.cryptonomicon.mixers.ShuffledInterlaceMixer;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -178,7 +179,7 @@ public class ShuffledInterlaceMixerTest {
 		int maxBlocks = 1;
 		byte[] iv = new byte[16];
 		ByteArray key = Jargon2.toByteArray( new byte[16] ).finalizable();
-		ArrayList<BlockedFile> allFiles = new ArrayList<>();
+		AllocatedBlockedFileList allFiles = new AllocatedBlockedFileList();
 		ArrayList<byte[]> contentsList = new ArrayList<>();
 		for (String str : contentStrings) {
 			contentsList.add( toBytes(str) );

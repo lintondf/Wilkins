@@ -103,56 +103,15 @@ public class Configuration {
 	}
 	
 	public Configuration() {
-		derivationChainColor = DerivationChainColors.BLUE;
 		keyDerivationParameters = KeyDerivationParameters.getDefaults(this);
 	}
 	
-	public static final String KEY_DERIVATION_COLOR = "key-derivation-color";
-	
 	public void addOptions(Options options) {
-		options.addOption("c", Configuration.KEY_DERIVATION_COLOR, true, "method used to convert passphrases to keys");
 		this.keyDerivationParameters.addOptions(options);
 	}
 
 	public void set( CommandLine line ) throws ConfigurationError {
-		if (line.hasOption(KEY_DERIVATION_COLOR)) {
-			String value = line.getOptionValue(KEY_DERIVATION_COLOR).toUpperCase();
-			try {
-				this.derivationChainColor = DerivationChainColors.valueOf(value);
-			} catch (IllegalArgumentException x) {
-				throw new ConfigurationError(KEY_DERIVATION_COLOR, value, "Color must be from [BLACK,RED,ORANGE,YELLOW,GREEN,BLUE]");
-			}
-		}
 		this.keyDerivationParameters.set( line );
-	}
-	
-	/**
-	 * The Enum DerivationChainColors.
-	 */
-	public enum DerivationChainColors {
-		BLACK,   //Bcrypt
-		RED,     //Scrypt
-		ORANGE,  //Argon2
-		YELLOW,  //Argon2+Bcrypt
-		GREEN,   //Argon2+Scrypt
-		BLUE,    //Argon2+Bcrypt+Scrypt
-	};
-	
-	// what chain of passphrase to key derivation methods to use
-	protected DerivationChainColors  derivationChainColor;
-
-	/**
-	 * @return the derivationChainColor
-	 */
-	public DerivationChainColors getDerivationChainColor() {
-		return derivationChainColor;
-	}
-
-	/**
-	 * @param derivationChainColor the derivationChainColor to set
-	 */
-	public void setDerivationChainColor(DerivationChainColors derivationChainColor) {
-		this.derivationChainColor = derivationChainColor;
 	}
 	
 	protected KeyDerivationParameters keyDerivationParameters;
