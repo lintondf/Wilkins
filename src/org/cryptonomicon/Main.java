@@ -44,32 +44,6 @@ import com.kosprov.jargon2.api.Jargon2.Version;
  */
 public class Main {
 	
-	protected static class ReportLogFormatter extends Formatter {
-	    @Override
-	    public String format(LogRecord record) {
-	        Calendar cal = new GregorianCalendar();
-	        cal.setTimeInMillis(record.getMillis());
-	        String msg = String.format("%-8s", record.getLevel()) + " , "
-	                + Main.logTime.format(cal.getTime())
-	                + ", "
-	                + record.getSourceClassName().substring(
-	                        record.getSourceClassName().lastIndexOf(".")+1,
-	                        record.getSourceClassName().length())
-	                + "::"
-	                + record.getSourceMethodName()
-	                + ", "
-	                + record.getMessage() + "\n";
-	        if (record.getThrown() != null) {
-	        	StringBuffer sb = new StringBuffer();
-	        	Throwable t = record.getThrown();
-	        	sb.append( t.getMessage() );
-	        	sb.append('\n');
-	        	msg += sb.toString();
-	        }
-	        return msg;
-	    }
-	}
-
 	protected static final String HELP_PREAMBLE = "wilkins [OPTIONS]... [input-file-path]...\n" +
 	  "Wraps two or more input data files each AES encrypted using corresponding passphrases" +
 	  " together with a configurable set of random filler material in secure container.";
@@ -144,6 +118,32 @@ public class Main {
 
 	public static void setLevel(Level level) {
 		Main.logger.setLevel(level);
+	}
+
+	protected static class ReportLogFormatter extends Formatter {
+	    @Override
+	    public String format(LogRecord record) {
+	        Calendar cal = new GregorianCalendar();
+	        cal.setTimeInMillis(record.getMillis());
+	        String msg = String.format("%-8s", record.getLevel()) + " , "
+	                + Main.logTime.format(cal.getTime())
+	                + ", "
+	                + record.getSourceClassName().substring(
+	                        record.getSourceClassName().lastIndexOf(".")+1,
+	                        record.getSourceClassName().length())
+	                + "::"
+	                + record.getSourceMethodName()
+	                + ", "
+	                + record.getMessage() + "\n";
+	        if (record.getThrown() != null) {
+	        	StringBuffer sb = new StringBuffer();
+	        	Throwable t = record.getThrown();
+	        	sb.append( t.getMessage() );
+	        	sb.append('\n');
+	        	msg += sb.toString();
+	        }
+	        return msg;
+	    }
 	}
 
 	protected static void initializeLogging() {

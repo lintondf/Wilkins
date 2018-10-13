@@ -101,7 +101,7 @@ public class KeyDerivationTest {
 			double elapsed = 1e-9 * (double)(System.nanoTime() - start);
 			assertTrue( elapsed > 2.0 && elapsed < 16.0 );
 			//System.out.printf( "%10.3f %s\n", elapsed, Wilkins.toString( key.getBytes() ) );
-			assertTrue( Wilkins.toString(key.getBytes()).equals(expected[i]) );
+			assertTrue( Util.toString(key.getBytes()).equals(expected[i]) );
 		}
 	}
 

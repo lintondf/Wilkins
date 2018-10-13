@@ -6,6 +6,8 @@ package org.cryptonomicon;
 import java.util.ArrayList;
 import java.util.Random;
 
+import com.google.common.io.BaseEncoding;
+
 /**
  * @author lintondf
  *
@@ -32,6 +34,10 @@ public class Util {
 			iterators.set(k,  temp);
 		}
 		
+	}
+
+	public static String toString( byte[] array ) {
+		return String.format("(%d) %s", array.length, BaseEncoding.base16().lowerCase().encode(array) );
 	}
 	
 	

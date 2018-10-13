@@ -129,25 +129,9 @@ public class Wilkins {
 			ByteArray key = keyDerivation.deriveKey(passPhrase, fileHeader.getSalt() );
 
 			AllocatedBlockedFile pair = new AllocatedBlockedFile(file, key);
-			Main.getLogger().info(String.format("adding %-16s %s %s %d", path, toString(key.getBytes()), passPhrase, pair.getLength() ));
+			Main.getLogger().info(String.format("adding %-16s %s %s %d", path, Util.toString(key.getBytes()), passPhrase, pair.getLength() ));
 			maxLength = Math.max(maxLength, pair.getLength());
 			dataFiles.add(pair);
-			return true;
-		} catch (Exception x) {
-			return false;
-		}
-	}
-
-	public boolean addFillerFile(String path) {
-		try {
-			File file = new File(path);
-			if (!file.exists() && file.isFile() && file.length() > 0L)
-				return false;
-			byte[] key = new byte[hashLength];
-			secureRandom.nextBytes(key);
-			AllocatedBlockedFile pair = new AllocatedBlockedFile(file, Jargon2.toByteArray(key).finalizable().clearSource());
-			fillerFiles.add(pair);
-			fillerCount++;
 			return true;
 		} catch (Exception x) {
 			return false;
@@ -159,7 +143,6 @@ public class Wilkins {
 	}
 	
 	public boolean read( RandomAccessFile file, OutputStream os, ByteArray passPhrase ) throws IOException, GeneralSecurityException {
-		Configuration configuration = new Configuration();  // TODO hoist to class
 		InflaterOutputStream ios = new InflaterOutputStream( os );
 		
 		FileHeader fileHeader = new FileHeader(configuration, file);
@@ -208,11 +191,10 @@ public class Wilkins {
 		System.out.printf("Read 1: %d\n", file.getFilePointer());
 		
 		baseRandom.setSeed( targetGuidance.getSeed() );
-		//TODO add mixer selection to payloadfileguidance
 		try {
 			IvParameterSpec parameterSpec = new IvParameterSpec(fileHeader.getIV(targetGuidance.getFileOrdinal()));
-			System.out.println( toString(parameterSpec.getIV()));
-			System.out.println( toString(secretKey.getEncoded()));
+			System.out.println( Util.toString(parameterSpec.getIV()));
+			System.out.println( Util.toString(secretKey.getEncoded()));
 			getCipher().init(Cipher.DECRYPT_MODE, secretKey, parameterSpec);
 			CipherOutputStream cos = new CipherOutputStream( ios, getCipher() );
 			return mixer.readBlocks( targetGuidance, baseRandom, file, cos );
@@ -310,13 +292,6 @@ public class Wilkins {
 	}
 	
 	
-	public void report() {
-		//System.out.println(BaseEncoding.base16().lowerCase().encode(salt));
-//		dataFiles.forEach(System.out::println);
-//		fillerFiles.forEach(System.out::println);
-		System.out.printf("%d  %d\n", maxLength, fillerCount);
-	}
-
 	/**
 	 * @return the secureRandom
 	 */
@@ -365,10 +340,6 @@ public class Wilkins {
 
 		System.out.printf("Matches: %s%n", matches);
 
-	}
-	
-	public static String toString( byte[] array ) {
-		return String.format("(%d) %s", array.length, BaseEncoding.base16().lowerCase().encode(array) );
 	}
 	
 	public static void test_Permute(String[] args) {
@@ -453,14 +424,12 @@ public class Wilkins {
 
 		ipmec.addDataFile("data1.txt", fileHeader, Jargon2.toByteArray("key1"));
 		ipmec.addDataFile("data2.txt", fileHeader, Jargon2.toByteArray("key2"));
-		ipmec.addFillerFile("filler1.txt");
 		ipmec.setRandomFillerCount(3);
 		
 		File file = new File("output.gpg");
 		try {
 			RandomAccessFile writer = new RandomAccessFile(file, "rw");
 			ipmec.load(writer, fileHeader );
-			ipmec.camouflage( writer );
 			ipmec.write(writer, fileHeader );
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -479,13 +448,12 @@ public class Wilkins {
 //		} catch (IOException e) {
 //			e.printStackTrace();
 //		}
-		ipmec.report();
 	}
 	
-	public void camouflage(RandomAccessFile writer) {
-		// compute total file size
-	
-	}
+//	public void camouflage(RandomAccessFile writer) {
+//		// compute total file size
+//	
+//	}
 
 	public static void test_read(String[] args) {
 		Wilkins ipmec = new Wilkins();
@@ -493,7 +461,6 @@ public class Wilkins {
 			File in = new File("output.gpg");
 			RandomAccessFile file = new RandomAccessFile( in, "r");
 			ipmec.read( file, new FileOutputStream(new File("test_read.out")), Jargon2.toByteArray("key1"));
-			ipmec.report();
 		} catch (Exception x) {
 			
 		}
@@ -504,14 +471,14 @@ public class Wilkins {
 		Wilkins ipmec = new Wilkins();
 		PayloadFileGuidance g = new PayloadFileGuidance( 1, 2, 3, 4L, 5 );
 		System.out.println(g.toString());
-		System.out.println( toString(g.getPlainText() ) );
+		System.out.println( Util.toString(g.getPlainText() ) );
 		byte[] key = new byte[ipmec.hashLength];
 		SecretKey secretKey = new SecretKeySpec(key, "AES");
 		byte[] iv = new byte[Configuration.AES_IV_BYTES];
 		g.encode(ipmec.getCipher(), secretKey, iv);
-		System.out.println( toString( g.getCipherText()) );
+		System.out.println( Util.toString( g.getCipherText()) );
 		g.decode(ipmec.getCipher(), secretKey, iv);
-		System.out.println( toString( g.getPlainText()) );
+		System.out.println( Util.toString( g.getPlainText()) );
 		System.out.println(g.toString());		
 	}
 	

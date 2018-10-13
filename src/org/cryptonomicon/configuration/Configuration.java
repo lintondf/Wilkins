@@ -13,7 +13,7 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.cryptonomicon.FileHeader;
-import org.cryptonomicon.Wilkins;
+import org.cryptonomicon.Util;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Shorts;
@@ -159,10 +159,11 @@ public class Configuration {
 	
 	
 	public int maskInt( int value, int min, int max) {
-		int n = 1 + max - min;
-		int modulus = (n == 1) ? 1 : Integer.highestOneBit(n - 1) * 2;
-		int adder = modulus*random.nextInt( Integer.MAX_VALUE/(modulus*2) );
-		return (value - min) + adder;
+//		int n = 1 + max - min;
+//		int modulus = (n == 1) ? 1 : Integer.highestOneBit(n - 1) * 2;
+//		int adder = modulus*random.nextInt( Integer.MAX_VALUE/(modulus*2) );
+//		return (value - min) + adder;
+		return value;
 	}
 	
 	public int maskInt(int value, Parameter parameter) {
@@ -170,10 +171,11 @@ public class Configuration {
 	}
 	
 	public int maskShort( short value, int min, int max) {
-		int n = 1 + max - min;
-		int modulus = (n == 1) ? 1 : Integer.highestOneBit(n - 1) * 2;
-		int adder = modulus*random.nextInt( Short.MAX_VALUE/(modulus*2) );
-		return (value - min) + adder;
+//		int n = 1 + max - min;
+//		int modulus = (n == 1) ? 1 : Integer.highestOneBit(n - 1) * 2;
+//		int adder = modulus*random.nextInt( Short.MAX_VALUE/(modulus*2) );
+//		return (value - min) + adder;
+		return value;
 	}
 	
 	public int maskShort(short value, Parameter parameter) {
@@ -193,9 +195,10 @@ public class Configuration {
 	}
 
 	public int unmaskInt( int masked, int min, int max ) {
-		int n = 1 + max - min;
-		int modulus = (n == 1) ? 1 : Integer.highestOneBit(n - 1) * 2;
-		return min + (masked % modulus);
+//		int n = 1 + max - min;
+//		int modulus = (n == 1) ? 1 : Integer.highestOneBit(n - 1) * 2;
+//		return min + (masked % modulus);
+		return masked;
 	}
 	
 	public int unmaskInt(int masked, Parameter parameter) {
@@ -203,9 +206,10 @@ public class Configuration {
 	}
 	
 	public short unmaskShort( short masked, int min, int max ) {
-		int n = 1 + max - min;
-		int modulus = (n == 1) ? 1 : Integer.highestOneBit(n - 1) * 2;
-		return (short) (min + (masked % modulus));
+//		int n = 1 + max - min;
+//		int modulus = (n == 1) ? 1 : Integer.highestOneBit(n - 1) * 2;
+//		return (short) (min + (masked % modulus));
+		return masked;
 	}
 	
 	public short unmaskShort(short masked, Parameter parameter) {
@@ -227,6 +231,7 @@ public class Configuration {
 		//System.out.printf("readMaskedShort %s %d %d\n", Wilkins.toString(array), masked, unmaskShort( masked, parameter ));
 		return unmaskShort( masked, parameter );
 	}
+	
 
 	/**
 	 * The main method.
@@ -254,7 +259,7 @@ public class Configuration {
 		byte[] iv = new byte[32];
 		configuration.random.nextBytes(iv);
 		FileHeader fh = new FileHeader( kdp, Jargon2.toByteArray(iv) );
-		System.out.println( Wilkins.toString( fh.getPlainText() ) );
+		System.out.println( Util.toString( fh.getPlainText() ) );
 		KeyDerivationParameters kdp2 = fh.getKeyDerivationParameters();
 		String r2 = kdp2.toString();
 		System.out.println( r1.equals(r2));

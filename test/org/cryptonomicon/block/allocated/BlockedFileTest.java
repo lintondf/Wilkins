@@ -17,7 +17,7 @@ import java.util.Arrays;
 import java.util.Random;
 
 import org.apache.commons.io.IOUtils;
-import org.cryptonomicon.Wilkins;
+import org.cryptonomicon.Util;
 import org.cryptonomicon.block.Block;
 import org.cryptonomicon.block.BlockedFile;
 import org.cryptonomicon.block.BlockedFile.State;
@@ -121,7 +121,7 @@ public class BlockedFileTest {
 			byte[] result = IOUtils.toByteArray(is);
 			assertTrue( result.length == 48 );
 			final String expectedDE = "(48) 33bad306982656f13130872281a011ba219cf5d1cae77558c4bea09e772479e1bda20cd08c959e7a3d61e5236d2a5dec";
-			assertTrue( expectedDE.equals(Wilkins.toString(result)));
+			assertTrue( expectedDE.equals(Util.toString(result)));
 			
 			ByteArrayOutputStream bos = new ByteArrayOutputStream();
 			OutputStream os = bf.getOutputStream(bos, iv);
