@@ -11,6 +11,7 @@ import java.security.SecureRandom;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.cryptonomicon.FileHeader;
 import org.cryptonomicon.Util;
@@ -42,26 +43,58 @@ public class Configuration {
 		}
 	}
 	
-	public static class Parameter {
+	public static class Parameter extends Option {
 		
+		String optionLetter;
 		String optionName;
 		String baseMessage;
+		boolean takesValue;
 		int defaultValue;
 		int minValue;
 		int maxValue;
 		
 		public Parameter( String optionName, String baseMessage, int defaultValue, int minValue, int maxValue) {
+			super(null, optionName, false, baseMessage);
+			this.optionLetter = null;
 			this.optionName = optionName;
 			this.baseMessage = baseMessage;
 			this.defaultValue = defaultValue;
 			this.minValue = minValue;
 			this.maxValue = maxValue;
+			this.takesValue = false;
+			this.setDescription(this.getHelpMessage());
+		}
+		
+		public Parameter( String optionLetter, String optionName, boolean takesValue, String baseMessage, int defaultValue, int minValue, int maxValue) {
+			super(optionLetter, optionName, takesValue, baseMessage);
+			this.optionLetter = optionLetter;
+			this.optionName = optionName;
+			this.baseMessage = baseMessage;
+			this.defaultValue = defaultValue;
+			this.minValue = minValue;
+			this.maxValue = maxValue;
+			this.takesValue = takesValue;
+			this.setDescription(this.getHelpMessage());
+		}
+		
+		public Parameter( String optionLetter, String optionName, boolean takesValue, String baseMessage) {
+			super(optionLetter, optionName, takesValue, baseMessage);
+			this.optionLetter = optionLetter;
+			this.optionName = optionName;
+			this.baseMessage = baseMessage;
+			this.defaultValue = 0;
+			this.minValue = 0;
+			this.maxValue = 0;
+			this.takesValue = takesValue;
+			this.setDescription(this.getHelpMessage());
 		}
 		
 		public String getHelpMessage() {
+			if (minValue == 0 && maxValue == 0)
+				return baseMessage;
 			return String.format( "%s; default %d; range %d..%d", baseMessage, defaultValue, minValue, maxValue );
 		}
-
+		
 		/**
 		 * @return the optionName
 		 */
@@ -100,6 +133,10 @@ public class Configuration {
 		public String getOptionValue(CommandLine line) {
 			return line.getOptionValue(getOptionName());
 		}
+		
+		public boolean specified(CommandLine line) {
+			return line.hasOption(getOptionName());
+		}
 	}
 	
 	public Configuration() {
@@ -132,10 +169,12 @@ public class Configuration {
 		this.keyDerivationParameters = keyDerivationParameters;
 	}
 	
-	public static int optionAsInteger( CommandLine line, String optionName, int floor, int ceiling, String parameterName ) throws ConfigurationError {
+	public static int optionAsInteger( CommandLine line, String optionName, int defaultValue, int floor, int ceiling, String parameterName ) throws ConfigurationError {
 		String value = line.getOptionValue(optionName);
+		if (value == null)
+			return defaultValue;
 		int cost = Integer.parseInt( value );
-		if (cost <= 0 || cost >= 128) {
+		if (cost > floor && cost < ceiling) {
 			return cost;
 		} else {
 			String message = String.format("%s must be > %d and < %d", parameterName, floor, ceiling );
@@ -144,7 +183,7 @@ public class Configuration {
 	}
 	
 	public static int optionAsInteger( CommandLine line, Parameter parameter ) throws ConfigurationError {
-		return optionAsInteger( line, parameter.getOptionName(), parameter.getMinValue(), parameter.getMaxValue(), parameter.getBaseMessage() );
+		return optionAsInteger( line, parameter.getOptionName(), parameter.getDefaultValue(), parameter.getMinValue(), parameter.getMaxValue(), parameter.getBaseMessage() );
 	}
 	
 	public static String optionAsString( CommandLine line, String optionName, String parameterName ) throws ConfigurationError {

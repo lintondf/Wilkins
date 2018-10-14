@@ -29,6 +29,7 @@ import org.apache.commons.cli.ParseException;
 import org.cryptonomicon.Main.ReportLogFormatter;
 import org.cryptonomicon.configuration.Configuration;
 import org.cryptonomicon.configuration.Configuration.ConfigurationError;
+import org.cryptonomicon.configuration.Configuration.Parameter;
 import org.cryptonomicon.configuration.KeyDerivationParameters;
 
 import com.kosprov.jargon2.api.Jargon2;
@@ -48,8 +49,59 @@ public class Main {
 	  "Wraps two or more input data files each AES encrypted using corresponding passphrases" +
 	  " together with a configurable set of random filler material in secure container.";
 
-	protected static final String FILE_PASSWORDS = "file-passwords";
 	
+	
+	// major mode selection
+	protected static final Parameter CREATE_OPTION = 
+			new Parameter("c", "create", false, "create a haystack file (default)");
+	protected static final Parameter EXTRACT_OPTION = 
+			new Parameter("x", "extract", false, "extract a file from a haystack");
+	
+	// secondary function mode selection
+	protected static final Parameter HELP_OPTION = 
+			new Parameter("h", "help", false, "print these instructions");
+	protected static final Parameter SUGGEST_OPTION =
+			new Parameter(null, "suggest-passwords", true, "#", 4, 0, 1000 );
+	protected static final Parameter SUGGEST_WORDS_OPTION =
+			new Parameter(null, "suggest-word-count", true, "#; number of words in suggestions", 4, 1, 11 );
+	
+	// other arguments
+	protected static final Parameter FILE_PASSWORDS = 
+			new Parameter(null, "file-passwords", true, "[passphrase1,passphrase2,...]" );
+	protected static final Parameter OUTPUT_FILE_OPTION = 
+			new Parameter("o", "output-file", true, "output file path (implies create)");
+	
+	protected static Options getOptions() {
+		Options options = new Options();
+		options.addOption(HELP_OPTION);
+		options.addOption(SUGGEST_OPTION);
+		options.addOption(SUGGEST_WORDS_OPTION);
+		options.addOption(CREATE_OPTION);
+		options.addOption(EXTRACT_OPTION);
+		Option option = FILE_PASSWORDS;
+		option.setArgs(Option.UNLIMITED_VALUES);
+		option.setValueSeparator(',');
+		options.addOption(option);
+		option = OUTPUT_FILE_OPTION;
+		options.addOption(option);
+		// -n --straw-count number of random filler files (default is random 2..3xinput count)
+		// -s --size-multiplier (float) final file size multiplier
+		// --check-passwords 
+		// --erase-inputs
+		// --erase-inputs-wipe  (W/RV 0, W/RV 1, W/RV random)
+		// --gpg-camouflage  (add gpg header and permute bytes using seed; write as .gpg)
+		// --mixer-shuffled
+		// --mixer-randomized
+		// --reader-allocated
+		// --reader-streamed
+		// --log-level
+		
+		return options;
+	}
+	
+	///////////////////////////////////////////////////////////////////
+	// Mode Processing
+	///////////////////////////////////////////////////////////////////
 	
 	protected void processHelp(Options options) {
     	// automatically generate the help statement
@@ -77,8 +129,25 @@ public class Main {
     	formatter.printHelp( HELP_PREAMBLE, options );
 	}
 	
+	protected void processSuggestPasswords(CommandLine line) throws ConfigurationError {
+    	int count = Configuration.optionAsInteger(line, SUGGEST_OPTION );
+    	int words = Configuration.optionAsInteger(line, SUGGEST_WORDS_OPTION);
+		PassPhraseStrength passPhraseStrength = new PassPhraseStrength();
+		passPhraseStrength.suggest(count, words);
+	}
+	
+	protected void processCreate( CommandLine line ) {
+		
+	}
+	
+	protected void processExtract( CommandLine line ) {
+		
+	}
+	
+	///////////////////////////////////////////////////////////////////
+
 	protected void addCommandLinePasswords( CommandLine line ) {
-        String[] values = line.getOptionValues(FILE_PASSWORDS);
+        String[] values = line.getOptionValues(FILE_PASSWORDS.getOptionName());
         for (String value : values)  {
         	passwords.add( Jargon2.toByteArray(value.toCharArray()).finalizable().clearSource() );
         }
@@ -146,7 +215,7 @@ public class Main {
 	    }
 	}
 
-	protected static void initializeLogging() {
+	protected void initializeLogging() {
 		    try {
 		        Main.logFileHandler = new FileHandler("wilkins.log");
 	//	        logFileHandler = new FileHandler("wilkins-%g.log", 1*1024*1024, 10);
@@ -174,15 +243,22 @@ public class Main {
 	protected static Logger logger = Logger.getLogger("wilkins");
     
 	public Main( Configuration configuration, Options options, String[] args ) {
+		initializeLogging();
 	    CommandLineParser parser = new DefaultParser();
 	    try {
 	        // parse the command line arguments
 	        CommandLine line = parser.parse( options, args );
-	        if (args.length == 0 || line.hasOption("help")) {
+	        
+	        if (args.length == 0 || HELP_OPTION.specified(line)) {
 	        	processHelp( options );
+	        	return;
+	        }
+	        if (SUGGEST_OPTION.specified(line)) {
+	        	processSuggestPasswords(line);
+	    		return;
 	        }
 	        
-	        if ( line.hasOption( FILE_PASSWORDS ) ) {
+	        if ( FILE_PASSWORDS.specified( line ) ) {
 	        	System.out.println("Wilkins Haystack WARNING: use of command line passwords is rarely wise.");
 	        	addCommandLinePasswords( line );
 	        }
@@ -193,7 +269,8 @@ public class Main {
 	
 			if ( badPath != null  ) {
 				System.err.printf("Wilkins Haystack ERROR: file not found: %s", badPath );
-				System.exit(1);				
+//				System.exit(1);
+				return;
 			}
 			
 			if (passwords.isEmpty()) {
@@ -204,7 +281,8 @@ public class Main {
 			if (files.size() != passwords.size()) {
 				System.err.printf("Wilkins Haystack ERROR: file and password counts must match. (%d vs %d)\n", 
 						files.size(), passwords.size() );
-				System.exit(1);				
+//				System.exit(1);
+				return;
 			}
 			
 			
@@ -214,34 +292,6 @@ public class Main {
 	        System.err.println( "Wilkins Haystack ERROR: configuration failed.  Reason: " + exp.getMessage() );
 	    }
 	}
-	
-	
-	protected static Options getOptions() {
-		Options options = new Options();
-		options.addOption("c", "create", false, "create a haystack file (default)");
-		options.addOption("x", "extract", false, "extract a file from a haystack");
-		options.addOption(null, FILE_PASSWORDS, true, "[passphrase1,passphrase2,...]");
-		options.getOption(FILE_PASSWORDS).setArgs(Option.UNLIMITED_VALUES);
-		options.getOption(FILE_PASSWORDS).setValueSeparator(',');
-		options.addOption("h", "help", false, "print these instructions");
-		options.addRequiredOption("o", "output-file", true, "output file path (implies create)");
-		// -n --straw-count number of random filler files (default is random 2..3xinput count)
-		// -s --size-multiplier (float) final file size multiplier
-		// --measure filename EXITS
-		// --check-passwords
-		// --suggest-passwords EXITS
-		// --erase-inputs
-		// --erase-inputs-wipe  (W/RV 0, W/RV 1, W/RV random)
-		// --gpg-camouflage  (add gpg header and permute bytes using seed; write as .gpg)
-		// --mixer-shuffled
-		// --mixer-randomized
-		// --reader-allocated
-		// --reader-streamed
-		// --log-level
-		
-		return options;
-	}
-	
 	/**
 	 * @param args
 	 */

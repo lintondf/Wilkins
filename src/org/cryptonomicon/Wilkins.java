@@ -90,7 +90,6 @@ public class Wilkins {
 
 			
 	public Wilkins(Configuration configuration, Mixer mixer) {
-		Main.initializeLogging();
 		this.configuration = configuration;
 		this.parameters = configuration.getKeyDerivationParameters();
 		this.keyDerivation = new KeyDerivation(configuration);

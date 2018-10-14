@@ -34,12 +34,13 @@ public class PassPhraseStrength {
 	Nbvcxz checker = new Nbvcxz();
 	
 	public PassPhraseStrength() {
-		Result result = checker.estimate("reclusive-divorcee-lands");
-		System.out.println( report(result) );
-		for (int i = 0; i < 10; i++) {
-			String pass1 = Generator.generatePassphrase("-", 4);
+	}
+
+	public void suggest( int count, int words) {
+		for (int i = 0; i < count; i++) {
+			String pass1 = Generator.generatePassphrase("-", words);
 			Result result1 = checker.estimate(pass1);
-			System.out.printf("%10.3f %s\n", result1.getEntropy(), pass1 );
+			System.out.printf("%s\n", pass1 );
 		}
 	}
 	
