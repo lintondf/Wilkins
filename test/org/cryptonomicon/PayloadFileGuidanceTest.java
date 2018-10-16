@@ -69,7 +69,7 @@ public class PayloadFileGuidanceTest {
 		Wilkins ipmec = new Wilkins();
 		PayloadFileGuidance g = new PayloadFileGuidance( 1, 2, 3, 4L, 5 );
 		g.setCipherText(expectedCipherText);
-		byte[] key = new byte[ipmec.hashLength];
+		byte[] key = new byte[ipmec.configuration.getKeyDerivationParameters().getKeySize()/8];
 		SecretKey secretKey = new SecretKeySpec(key, "AES");
 		byte[] iv = new byte[Configuration.AES_IV_BYTES];
 		g.decode(ipmec.getCipher(), secretKey, iv);
@@ -81,7 +81,7 @@ public class PayloadFileGuidanceTest {
 		Wilkins ipmec = new Wilkins();
 		PayloadFileGuidance g = new PayloadFileGuidance( 1, 2, 3, 4L, 5 );
 		g.setPlainText(expectedPlainText);
-		byte[] key = new byte[ipmec.hashLength];
+		byte[] key = new byte[ipmec.configuration.getKeyDerivationParameters().getKeySize()/8];
 		SecretKey secretKey = new SecretKeySpec(key, "AES");
 		byte[] iv = new byte[Configuration.AES_IV_BYTES];
 		g.encode(ipmec.getCipher(), secretKey, iv);

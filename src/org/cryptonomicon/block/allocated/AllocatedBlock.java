@@ -5,8 +5,8 @@ import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.util.Arrays;
 
-import org.cryptonomicon.Wilkins;
 import org.cryptonomicon.block.Block;
+import org.cryptonomicon.configuration.Configuration;
 
 import com.google.common.io.BaseEncoding;
 
@@ -22,7 +22,7 @@ public class AllocatedBlock implements Block {
 	protected AllocatedBlock( int count ) {
 		this.count = count;
 		contents = new byte[BLOCK_SIZE];
-		Wilkins.getSecureRandom().nextBytes(contents);
+		Configuration.getSecureRandom().nextBytes(contents);
 	}
 	
 	public static Block getTestBlock( int count ) {
@@ -43,7 +43,7 @@ public class AllocatedBlock implements Block {
 	public void pad() {
 		if (count < BLOCK_SIZE) {
 			byte[] padding = new byte[BLOCK_SIZE-count];
-			Wilkins.getSecureRandom().nextBytes(padding);
+			Configuration.getSecureRandom().nextBytes(padding);
 			for (int i = 0; i < padding.length; i++) {
 				contents[count+i] = padding[i];
 			}

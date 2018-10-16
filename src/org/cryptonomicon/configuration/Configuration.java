@@ -15,6 +15,7 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.cryptonomicon.FileHeader;
 import org.cryptonomicon.Util;
+import org.cryptonomicon.Wilkins;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Shorts;
@@ -30,7 +31,7 @@ import com.kosprov.jargon2.api.Jargon2.Type;
  */
 public class Configuration {
 
-	protected SecureRandom random = new SecureRandom();
+	protected static SecureRandom random = new SecureRandom();
 
 	
 	public static class ConfigurationError extends Exception {
@@ -137,6 +138,14 @@ public class Configuration {
 		public boolean specified(CommandLine line) {
 			return line.hasOption(getOptionName());
 		}
+		
+		public int asInteger(CommandLine line) {
+			try {
+				return Configuration.optionAsInteger( line, this );
+			} catch (ConfigurationError e) {
+				return this.getDefaultValue();
+			}
+		}
 	}
 	
 	public Configuration() {
@@ -174,10 +183,10 @@ public class Configuration {
 		if (value == null)
 			return defaultValue;
 		int cost = Integer.parseInt( value );
-		if (cost > floor && cost < ceiling) {
+		if (cost >= floor && cost <= ceiling) {
 			return cost;
 		} else {
-			String message = String.format("%s must be > %d and < %d", parameterName, floor, ceiling );
+			String message = String.format("%s must be >= %d and =< %d", parameterName, floor, ceiling );
 			throw new ConfigurationError(optionName, value, message);
 		}
 	}
@@ -271,6 +280,13 @@ public class Configuration {
 		return unmaskShort( masked, parameter );
 	}
 	
+
+	/**
+	 * @return the secureRandom
+	 */
+	public static SecureRandom getSecureRandom() {
+		return Configuration.random;
+	}
 
 	/**
 	 * The main method.

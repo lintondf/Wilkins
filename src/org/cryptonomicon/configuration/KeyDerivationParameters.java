@@ -57,7 +57,7 @@ public class KeyDerivationParameters {
 			new Parameter("argon-parallelism", "Argon2 parallelism", 4, 1, 128 );
 	
 	protected static final Configuration.Parameter BCRYPT_ROUNDS = 
-			new Parameter("bcrypt-rounds", "BCRYPT rounds <integer>", 14, 0, 128 );
+			new Parameter("bcrypt-rounds", "BCRYPT rounds <integer>", 14, 4, 30 );
 	
 	protected static final Configuration.Parameter SCRYPT_N = 
 			new Parameter("scrypt-n", "SCRYPT N <integer>", 32*1024, 0, 128*1024 );

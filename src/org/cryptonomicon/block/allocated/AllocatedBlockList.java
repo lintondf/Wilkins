@@ -3,10 +3,10 @@ package org.cryptonomicon.block.allocated;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.cryptonomicon.Wilkins;
 import org.cryptonomicon.block.Block;
 import org.cryptonomicon.block.BlockList;
 import org.cryptonomicon.block.BlockListIterator;
+import org.cryptonomicon.configuration.Configuration;
 
 public class AllocatedBlockList implements BlockList {
 	
@@ -63,7 +63,7 @@ public class AllocatedBlockList implements BlockList {
 		int m = blocks.size();
 		for (int i = m; i < n; i++) {
 			AllocatedBlock block = new AllocatedBlock();
-			Wilkins.getSecureRandom().nextBytes(block.getContents());
+			Configuration.getSecureRandom().nextBytes(block.getContents());
 			block.setCount(block.getContents().length);
 			blocks.add( block );
 		}

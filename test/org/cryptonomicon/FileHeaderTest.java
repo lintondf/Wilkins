@@ -115,6 +115,7 @@ public class FileHeaderTest {
 			assertTrue( h2.isValid() );
 			KeyDerivationParameters kdp2 = h2.getKeyDerivationParameters();
 			assertTrue( parameters.toString().equals(kdp2.toString()) );
+			assertTrue( fh.getSalt().getBytes().length == h2.getSalt().getBytes().length );
 			assertTrue( Arrays.equals(saltArray, h2.getSalt().getBytes() ) );
 			
 			raf.close();
@@ -161,9 +162,9 @@ public class FileHeaderTest {
 		FileHeader fh = new FileHeader( parameters, salt );
 		final int n = Configuration.AES_IV_BYTES;
 		for (int i = 0; i < saltArray.length-n; i++) {
-			byte[] iv = fh.getIV(i);
+			byte[] iv = fh.getIV();
 			assertTrue( iv.length == n );
-			assertTrue( Arrays.equals(iv, Arrays.copyOfRange(saltArray, i, i+n)));
+			assertTrue( Arrays.equals(iv, Arrays.copyOfRange(saltArray, 0, n)));
 		}
 	}
 

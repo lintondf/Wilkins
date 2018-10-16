@@ -34,9 +34,9 @@ public class FileHeader extends EncryptableHeader {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		try {
 			parameters.write(bos);
-			bos.write( Arrays.copyOf(salt.getBytes(),  parameters.getKeySize()/8 ) ); 
+			bos.write( Arrays.copyOf(salt.getBytes(),  Configuration.AES_IV_BYTES ) ); 
 			byte[] filler = new byte[SIZE - bos.size()];       
-			Wilkins.getSecureRandom().nextBytes(filler);
+			Configuration.getSecureRandom().nextBytes(filler);
 			bos.write( filler );
 			plainText = bos.toByteArray();
 		} catch (IOException e) {
@@ -52,7 +52,7 @@ public class FileHeader extends EncryptableHeader {
 			file.read(plainText);
 			ByteArrayInputStream bis = new ByteArrayInputStream( this.getPlainText() );
 			this.keyDerivationParameters = new KeyDerivationParameters( configuration, bis );
-			this.salt = Jargon2.toByteArray( new byte[keyDerivationParameters.getKeySize()/8] );
+			this.salt = Jargon2.toByteArray( new byte[Configuration.AES_IV_BYTES] );
 			bis.read( this.salt.getBytes() );
 		} catch (IOException e) {
 			plainText = null;
@@ -78,14 +78,14 @@ public class FileHeader extends EncryptableHeader {
 		return true;		
 	}
 
-	public byte[] getIV(int offset) {
-		return Arrays.copyOfRange(this.salt.getBytes(), offset, offset+Configuration.AES_IV_BYTES);
+	public byte[] getIV() {
+		return Arrays.copyOfRange(this.salt.getBytes(), 0, Configuration.AES_IV_BYTES);
 	}
 	
 	public String toString() {
-		String kdpStr = this.keyDerivationParameters.toString().replaceAll("\n", "; ");
+		String kdpStr = this.keyDerivationParameters.toString().replaceAll(System.lineSeparator(), "; ");
 		
-		return String.format("%s %ss", kdpStr,
+		return String.format("%s %s", kdpStr,
 				BaseEncoding.base16().lowerCase().encode(getSalt().getBytes()) );
 				
 	}

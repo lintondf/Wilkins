@@ -81,8 +81,9 @@ public class KeyDerivation {
 
 		@Override
 		public ByteArray derive(ByteArray password, ByteArray salt) {
+			byte[] bsalt = Arrays.copyOf(salt.getBytes(), BCrypt.BCRYPT_SALT_LEN);
 			return Jargon2.toByteArray(bCrypt.crypt_raw(password.getBytes(),
-					salt.getBytes(), rounds, BCrypt.getMagicNumbers()));
+					bsalt, rounds, BCrypt.getMagicNumbers()));
 		}
 	}
 

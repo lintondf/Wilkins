@@ -35,10 +35,13 @@ public class MainTest {
 	    System.setErr(originalErr);
 	}
 	
+	/**
+	 * Test method for {@link org.cryptonomicon.Main#processSuggestPasswords(org.apache.commons.cli.Options)}.
+	 */
 	@Test
 	public void testSuggestOption() {
-		for (int count = 1; count < 6; count++) {
-			for (int wordCount = 2; wordCount < 6; wordCount++) {
+		for (int count = 1; count < 3; count++) {
+			for (int wordCount = 3; wordCount < 6; wordCount++) {
 				outContent.reset();
 				errContent.reset();
 				String[] cmd2 = { "--"+Main.SUGGEST_OPTION.getLongOpt(), Integer.toString(count),
@@ -54,12 +57,52 @@ public class MainTest {
 			}
 		}
 	}
+	
 	/**
 	 * Test method for {@link org.cryptonomicon.Main#processHelp(org.apache.commons.cli.Options)}.
 	 */
 	@Test
 	public void testProcessHelp() {
+		String[] cmd1 = {"-h"};
+		Main.main( cmd1 );
+		String result1 = outContent.toString();
+		outContent.reset();
+		String[] cmd2 = {"--help"};
+		Main.main( cmd2 );
+		String result2 = outContent.toString();
+		assertTrue( result1 != null && ! result1.isEmpty() );
+		assertTrue( result2 != null && ! result2.isEmpty() );
+		assertTrue( result1.equals(result2) );
+	}
+	
+	/**
+	 * Test method for {@link org.cryptonomicon.Main#processHelp(org.apache.commons.cli.Options)}.
+	 */
+	@Test
+	public void testProcessEvaluatePasswords() {
+		String[] cmd1 = {"--evaluate-passwords", "file1"};
+		Main.main( cmd1 );
+		String[] results = outContent.toString().split(System.lineSeparator());
+		assertTrue( results.length == 2 );
+		assertTrue( results[0].equals(cmd1[1]) );
+		assertTrue( results[1].contains("11.2 bits") );
+		assertTrue( results[1].contains(" NElL") );
+	}
+	
+	/**
+	 * Test method for {@link org.cryptonomicon.Main#processCreate(org.apache.commons.cli.Options)}.
+	 */
+	@Test
+	public void testProcessCreate() {		
 		fail("Not yet implemented");
+	}
+
+	/**
+	 * Test method for {@link org.cryptonomicon.Main#processExtract(org.apache.commons.cli.Options)}.
+	 */
+	@Test
+	public void testProcessExtract() {
+		fail("Not yet implemented");		
 	}
 
 	/**
@@ -83,38 +126,6 @@ public class MainTest {
 	 */
 	@Test
 	public void testInputPasswords() {
-		fail("Not yet implemented");
-	}
-
-	/**
-	 * Test method for {@link org.cryptonomicon.Main#getLogger()}.
-	 */
-	@Test
-	public void testGetLogger() {
-		fail("Not yet implemented");
-	}
-
-	/**
-	 * Test method for {@link org.cryptonomicon.Main#setLevel(java.util.logging.Level)}.
-	 */
-	@Test
-	public void testSetLevel() {
-		fail("Not yet implemented");
-	}
-
-	/**
-	 * Test method for {@link org.cryptonomicon.Main#initializeLogging()}.
-	 */
-	@Test
-	public void testInitializeLogging() {
-		fail("Not yet implemented");
-	}
-
-	/**
-	 * Test method for {@link org.cryptonomicon.Main#Main(org.cryptonomicon.configuration.Configuration, org.apache.commons.cli.Options, java.lang.String[])}.
-	 */
-	@Test
-	public void testMain() {
 		fail("Not yet implemented");
 	}
 

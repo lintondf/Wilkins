@@ -121,9 +121,8 @@ public class ShuffledInterlaceMixer implements Mixer {
 			permute( random, shuffled );
 			for (BlockListIterator it : shuffled) {
 				Block block = it.next();
-				//if (iBlock >= 13 && iBlock <= 14) System.out.printf( "W%d,%d %s\n", iBlock, iterators.indexOf(it), block.toString() );
 				block.write( writer, Block.BLOCK_SIZE );
-				Main.getLogger().log(Level.FINEST, String.format("%d,%d @ %d", iBlock, iterators.indexOf(it), writer.getFilePointer() ) );
+				//Main.getLogger().log(Level.FINEST, String.format("%d,%d @ %d", iBlock, iterators.indexOf(it), writer.getFilePointer() ) );
 			}
 		}
 		Main.getLogger().log(Level.FINEST, String.format("WriteBlocks Final: %d", writer.getFilePointer()));

@@ -15,6 +15,8 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 
+import org.cryptonomicon.configuration.Configuration;
+
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 
@@ -59,7 +61,7 @@ public class PayloadFileGuidance extends EncryptableHeader {
 			bos.write( Longs.toByteArray(seed) );     // 6 ..13  8 bytes
 			bos.write( Ints.toByteArray(length) );    //14 ..17  4 bytes
 			byte[] filler = new byte[10];             //18 ..27  10 bytes
-			Wilkins.getSecureRandom().nextBytes(filler);
+			Configuration.getSecureRandom().nextBytes(filler);
 			bos.write( filler );
 			plainText = bos.toByteArray();             // 28 bytes
 			
@@ -78,7 +80,7 @@ public class PayloadFileGuidance extends EncryptableHeader {
 		super(SIZE);
 		try {
 			file.read(plainText);
-			//System.out.println(BaseEncoding.base16().lowerCase().encode(guidance));
+			cipherText = Arrays.copyOf(plainText, plainText.length);
 		} catch (IOException e) {
 			plainText = null;
 		}
@@ -118,7 +120,7 @@ public class PayloadFileGuidance extends EncryptableHeader {
 	}
 	
 	public String toString() {
-		return String.format("%d %d %d %d %d %b", getMaxBlocks(), getFileCount(), getFileOrdinal(), getSeed(), getLength(), isValid() );
+		return String.format("MB %d; FC %d; FO %d; Seed %d; Length %d; Valid %b", getMaxBlocks(), getFileCount(), getFileOrdinal(), getSeed(), getLength(), isValid() );
 	}
 
 }
