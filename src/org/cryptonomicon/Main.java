@@ -328,7 +328,7 @@ public class Main {
 		for (Handler handler : handlers) {
 			handler.setFormatter(new Main.ReportLogFormatter());
 		}
-		Main.logger.setLevel(Level.FINE); // changed by configuration
+		Main.logger.setLevel(Level.FINER); // changed by configuration
 	}
 	
 	// Only for testing

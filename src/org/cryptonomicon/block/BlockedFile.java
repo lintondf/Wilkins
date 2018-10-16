@@ -146,11 +146,18 @@ public abstract class BlockedFile {
 	public abstract SecretKey getSecretKey();
 
 	/**
-	 * Gets the length.
+	 * Gets the length after compression and encryption
 	 *
 	 * @return the length
 	 */
-	public abstract long getLength();
+	public abstract long getCompressedLength();
+
+	/**
+	 * Gets the length as input.
+	 *
+	 * @return the length
+	 */
+	public abstract long getOriginalLength();
 
 	/**
 	 * Gets the state.

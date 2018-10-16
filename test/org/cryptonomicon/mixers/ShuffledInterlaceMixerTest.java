@@ -201,13 +201,6 @@ public class ShuffledInterlaceMixerTest {
 			assertTrue( output.substring(0*1024*2).startsWith( expected[0] ) );
 			assertTrue( output.substring(1*1024*2).startsWith( expected[1] ) );
 			assertTrue( output.substring(2*1024*2).startsWith( expected[2] ) );
-//			byte[] output2 = IOUtils.readFully( new FileInputStream(file), (int) file.length());
-//			while (output2.length > 0) {
-//				System.out.println( "    "+ Wilkins.toString(Arrays.copyOf(output2, 1024)));
-//				//System.out.println( Wilkins.toString(Arrays.copyOfRange(output, 16, 1024)));
-//				output2 = Arrays.copyOfRange(output2, 1024, output2.length);
-//			}
-//			if (output2.length > 0) System.out.println( Wilkins.toString(output2));
 		} catch (IOException e) {
 			e.printStackTrace();
 			fail(e.getMessage());

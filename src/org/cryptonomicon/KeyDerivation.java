@@ -179,11 +179,8 @@ public class KeyDerivation {
 		permuteDerivationSteps( pbkdp2, value, salt );
 
 		for (DerivationStep step : derivationSteps) {
-			long start = System.nanoTime();
 			value = step.derive(value, salt);
-//			System.out.printf("%s: %10.3f; ", step.getClass().getName(), 1e-9 * (double)(System.nanoTime() - start));
 		}
-		System.out.println();
 		return value.finalizable();
 	}
 

@@ -42,8 +42,11 @@ public class AllocatedBlockedFile extends BlockedFile {
 	/** The source file. Null if random content. */
 	private File file;
 	
-	/** The length. */
-	private long length;
+	/** The original length. */
+	private long originalLength;
+	
+	/** The compressed length. */
+	private long compressedLength;
 
 	/** The list of blocks. */
 	private AllocatedBlockList blocks;
@@ -66,7 +69,8 @@ public class AllocatedBlockedFile extends BlockedFile {
 		super();
 		file = f;
 		secretKey = new SecretKeySpec(key.getBytes(), "AES");
-		length = f.length();
+		compressedLength = f.length();
+		originalLength = compressedLength;
 		blocks = null;
 		state = State.IDLE;
 	}
@@ -81,7 +85,7 @@ public class AllocatedBlockedFile extends BlockedFile {
 		super();
 		file = null;
 		secretKey = new SecretKeySpec(key.getBytes(), "AES");
-		length = nBlocks * Block.BLOCK_SIZE;
+		compressedLength = nBlocks * Block.BLOCK_SIZE;
 		blocks = new AllocatedBlockList();
 		AllocatedBlockList.pad(blocks, nBlocks);
 		state = State.RAW;
@@ -97,7 +101,7 @@ public class AllocatedBlockedFile extends BlockedFile {
 		super();
 		file = null;
 		secretKey = new SecretKeySpec(key.getBytes(), "AES");
-		length = contents.length;
+		compressedLength = contents.length;
 		blocks = new AllocatedBlockList();
 		AllocatedBlock block = new AllocatedBlock(contents);
 		blocks.add(block);
@@ -111,7 +115,7 @@ public class AllocatedBlockedFile extends BlockedFile {
 	public void pad(int count) {
 		blocks.getList().get(blocks.getList().size() - 1).pad();
 		AllocatedBlockList.pad(blocks, count);
-		length = Block.BLOCK_SIZE * count;
+		compressedLength = Block.BLOCK_SIZE * count;
 	}
 	
 	/* (non-Javadoc)
@@ -151,7 +155,7 @@ public class AllocatedBlockedFile extends BlockedFile {
 			bis.close();
 			state = State.ZIPPED;
 			this.blocks = blocks;
-			length = blocks.length();
+			compressedLength = blocks.length();
 			return blocks.size();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -233,7 +237,7 @@ public class AllocatedBlockedFile extends BlockedFile {
 	@Override
 	public int encrypt( byte[] iv ) {
 		crypt( Cipher.ENCRYPT_MODE, iv );
-		length = blocks.length();
+		compressedLength = blocks.length();
 		state = State.ENCRYPTED;
 		return blocks.size();
 	}
@@ -254,7 +258,7 @@ public class AllocatedBlockedFile extends BlockedFile {
 		String path = "Filler";
 		if (file != null)
 			path = file.getAbsolutePath();
-		return String.format("%s %s %d %d", path, secretKey.toString(), length, (blocks!=null) ? blocks.size() : 0);
+		return String.format("%s %s %d %d", path, secretKey.toString(), compressedLength, (blocks!=null) ? blocks.size() : 0);
 	}
 
 
@@ -296,17 +300,16 @@ public class AllocatedBlockedFile extends BlockedFile {
 	 * @see org.cryptonomicon.block.BlockedFile#getLength()
 	 */
 	@Override
-	public long getLength() {
-		return length;
+	public long getCompressedLength() {
+		return compressedLength;
 	}
 
 
-	/**
-	 * @param length the length to set
-	 */
-	public void setLength(long length) {
-		this.length = length;
+	@Override
+	public long getOriginalLength() {
+		return originalLength;
 	}
+	
 
 
 	/* (non-Javadoc)
@@ -324,7 +327,7 @@ public class AllocatedBlockedFile extends BlockedFile {
 	public void setState(State state) {
 		this.state = state;
 	}
-	
+
 	
 //	public static void main( String[] args) {
 //		File file = new File("data0.txt"); //"/Users/lintondf/Downloads/torrent-file-editor-0.3.12.dmg");

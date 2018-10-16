@@ -41,7 +41,7 @@ public class WilkinsTest {
 	
 	@BeforeClass
 	public static void setUpOnce() {
-		main = new Main(); // initialze logging only
+		main = new Main(); // initialize logging only
 	}
 
 	/**
@@ -53,7 +53,7 @@ public class WilkinsTest {
 		CommandLineParser parser = new DefaultParser();
 		Options options = Main.getOptions();
 		wilkins.configuration.addOptions(options);
-		String[] args = {
+		String[] args = { // faster testing
 				"--pbkdf2-iterations", "10000",
 				"--argon-memory-cost", "1024",
 				"--argon-parallelism", "1",
@@ -78,7 +78,6 @@ public class WilkinsTest {
 	 * Test method for {@link org.cryptonomicon.Wilkins#addDataFile(java.lang.String, org.cryptonomicon.FileHeader, com.kosprov.jargon2.api.Jargon2.ByteArray)}.
 	 */
 	@Test
-	@Ignore
 	public void testAddDataFile() {
 		byte[] iv = new byte[Configuration.AES_IV_BYTES];
 		Configuration.getSecureRandom().nextBytes(iv);
@@ -95,7 +94,6 @@ public class WilkinsTest {
 	 * Test method for {@link org.cryptonomicon.Wilkins#setRandomFillerCount(int)}.
 	 */
 	@Test
-	@Ignore
 	public void testSetRandomFillerCount() {
 		byte[] iv = new byte[Configuration.AES_IV_BYTES];
 		Configuration.getSecureRandom().nextBytes(iv);
@@ -126,7 +124,6 @@ public class WilkinsTest {
 	 * Test method for {@link org.cryptonomicon.Wilkins#setPadding(int)}.
 	 */
 	@Test
-	@Ignore
 	public void testSetPadding_Count() {
 		byte[] iv = new byte[Configuration.AES_IV_BYTES];
 		Configuration.getSecureRandom().nextBytes(iv);
@@ -154,7 +151,6 @@ public class WilkinsTest {
 	}
 
 	@Test
-	@Ignore
 	public void testSetPadding_Random() {
 		byte[] iv = new byte[Configuration.AES_IV_BYTES];
 		Configuration.getSecureRandom().nextBytes(iv);
@@ -188,7 +184,7 @@ public class WilkinsTest {
 	@Test
 	public void testRead() {
 		ByteArray[] keys = {
-				Jargon2.toByteArray("key2"),
+				Jargon2.toByteArray("key1"),
 				Jargon2.toByteArray("key2"),
 		};
 		String[] fileNames = {
@@ -225,12 +221,14 @@ public class WilkinsTest {
 				raf = new RandomAccessFile( test, "rw" );
 				File result = File.createTempFile("Wilkins_Write", "check");
 				FileOutputStream os = new FileOutputStream( result );
+				
 				assertTrue( wilkins.read(raf, os, passPhrase) );
-//				System.out.println( result.length() );
+				
+				//System.out.println( result.length() );
 				raf.close();
 				String expected = IOUtil.readFully(new FileInputStream(fileNames[i]));
 				String actual = IOUtil.readFully(new FileInputStream(result));
-				System.out.println(i  +": "+ fileNames[i] + " / " + expected.length() + " " + actual.length() );
+				//System.out.println(i  +": "+ fileNames[i] + " / " + expected.length() + " " + actual.length() );
 				assertTrue( actual.equals(expected) );
 			}
 		} catch (IOException | GeneralSecurityException e) {
@@ -244,7 +242,6 @@ public class WilkinsTest {
 	 * Test method for {@link org.cryptonomicon.Wilkins#load(java.io.RandomAccessFile, org.cryptonomicon.FileHeader)}.
 	 */
 	@Test
-	@Ignore
 	public void testLoad() {
 		byte[] iv = new byte[Configuration.AES_IV_BYTES];
 		Configuration.getSecureRandom().nextBytes(iv);
@@ -276,7 +273,6 @@ public class WilkinsTest {
 	 * Test method for {@link org.cryptonomicon.Wilkins#write(java.io.RandomAccessFile, org.cryptonomicon.FileHeader)}.
 	 */
 	@Test
-	@Ignore
 	public void testWrite() {
 		byte[] iv = new byte[Configuration.AES_IV_BYTES];
 		Configuration.getSecureRandom().nextBytes(iv);

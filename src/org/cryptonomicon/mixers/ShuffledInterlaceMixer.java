@@ -54,11 +54,10 @@ public class ShuffledInterlaceMixer implements Mixer {
 	public boolean readBlocks(PayloadFileGuidance fileGuidance, Random random,
 			RandomAccessFile file, OutputStream cos)
 			throws IOException {
-		//TODO set seed from guidance?
+		//System.out.println("readBlocks: " + fileGuidance.toString() );
 		int nFiles = fileGuidance.getFileCount(); 
 		long length = fileGuidance.getLength();
 		int fileModulus = fileGuidance.getFileOrdinal();
-		int maxBlocks = fileGuidance.getMaxBlocks();
 		ArrayList<AllocatedBlockReader> readers = new ArrayList<>();
 		for (int i = 0; i < nFiles+1; i++) {
 			readers.add( new AllocatedBlockReader(file, length ) );
@@ -79,7 +78,7 @@ public class ShuffledInterlaceMixer implements Mixer {
 			Block allXor = readers.get(nFiles).getLast();
 			AllocatedBlock allButTarget = readers.get(fileModulus).getLast();
 			allXor = allXor.xor( allButTarget );
-			Main.getLogger().log(Level.FINEST, String.format("%3d %3d  %8d / %s", iBlock, nBlocks, remaining, allXor.toString() ));
+			Main.getLogger().log(Level.FINER, String.format("%3d %3d  %8d", iBlock, nBlocks, remaining ));
 			allXor.write( cos, (remaining > Block.BLOCK_SIZE) ? Block.BLOCK_SIZE : remaining);
 			remaining -= Block.BLOCK_SIZE;
 		}
@@ -96,7 +95,7 @@ public class ShuffledInterlaceMixer implements Mixer {
 			throws IOException {
 		// generate xor'd data blocks: {for-each-i {xor(all but i)}, xor all}
 		for (BlockedFile file : allFiles) {
-			Main.getLogger().log(Level.FINEST, String.format("of %d", file.getLength() ) );
+			Main.getLogger().log(Level.FINEST, String.format("of %d/%d", file.getOriginalLength(), file.getCompressedLength() ) );
 		}
 		ArrayList<BlockList> allLists = new ArrayList<>();
 		for (BlockedFile file : allFiles) {

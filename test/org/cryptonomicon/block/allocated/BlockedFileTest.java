@@ -61,7 +61,8 @@ public class BlockedFileTest {
 		AllocatedBlockedFile bf = new AllocatedBlockedFile( file, salt );
 		assertTrue( bf.getFile().equals(file) );
 		assertTrue( Arrays.equals( bf.getSecretKey().getEncoded(), salt.getBytes() ) );
-		assertTrue( bf.getLength() == file.length() );
+		assertTrue( bf.getCompressedLength() == file.length() );
+		assertTrue( bf.getOriginalLength() == file.length() );
 		assertTrue( bf.getBlockList() == null );
 		assertTrue( bf.getState() == State.IDLE );
 	}
@@ -75,7 +76,7 @@ public class BlockedFileTest {
 		AllocatedBlockedFile bf = new AllocatedBlockedFile( salt, 2 );
 		assertTrue( bf.getFile() == null );
 		assertTrue( Arrays.equals( bf.getSecretKey().getEncoded(), salt.getBytes() ) );
-		assertTrue( bf.getLength() == 2 * Block.BLOCK_SIZE );
+		assertTrue( bf.getCompressedLength() == 2 * Block.BLOCK_SIZE );
 		assertTrue( bf.getBlockList() != null && bf.getBlockList().size() == 2 );
 		assertTrue( bf.getState() == State.RAW );
 	}
@@ -88,7 +89,7 @@ public class BlockedFileTest {
 		ByteArray salt = Jargon2.toByteArray(new byte[32]);
 		AllocatedBlockedFile bf = new AllocatedBlockedFile( salt, 2 );
 		bf.pad(3);
-		assertTrue( bf.getLength() == 3 * Block.BLOCK_SIZE );
+		assertTrue( bf.getCompressedLength() == 3 * Block.BLOCK_SIZE );
 		assertTrue( bf.getBlockList() != null && bf.getBlockList().size() == 3 );
 	}
 
