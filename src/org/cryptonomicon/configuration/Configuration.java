@@ -170,6 +170,7 @@ public class Configuration {
 	}
 	
 	protected KeyDerivationParameters keyDerivationParameters;
+	
 	public static final int AES_IV_BYTES = 128/8;
 
 	/**

@@ -191,6 +191,9 @@ public class KeyDerivationParameters {
 		this.configuration = configuration;
 		this.keySize = keySize;
 		this.pbkdf2Iterations = iterations;
+		this.argonParameters = new ArgonParameters();
+		this.bCryptParameters = new BCryptParameters();
+		this.sCryptParameters = new SCryptParameters();
 	}
 	
 	/**
@@ -593,10 +596,10 @@ public class KeyDerivationParameters {
 				this.N = Configuration.optionAsInteger( line, SCRYPT_N );
 			}
 			if (line.hasOption(SCRYPT_r.getOptionName())) {
-				this.N = Configuration.optionAsInteger( line, SCRYPT_r);
+				this.r = (short) Configuration.optionAsInteger( line, SCRYPT_r);
 			}
 			if (line.hasOption(SCRYPT_p.getOptionName())) {
-				this.N = Configuration.optionAsInteger( line, SCRYPT_p );
+				this.p = (short) Configuration.optionAsInteger( line, SCRYPT_p );
 			}
 		}
 

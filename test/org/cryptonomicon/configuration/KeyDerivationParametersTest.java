@@ -49,9 +49,7 @@ public class KeyDerivationParametersTest {
 		Configuration configuration = new Configuration();
 		KeyDerivationParameters kdp = KeyDerivationParameters.getDefaults(configuration);
 		kdp.addOptions(options);
-		options.getOptions().forEach(System.out::println);
-		System.out.println(options.getOptions().size());
-//		assertTrue( options.getOptions().size() == 10 );
+		assertTrue( options.getOptions().size() == 11 );
 	}
 
 	/**
