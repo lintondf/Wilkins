@@ -35,6 +35,11 @@ public class Configuration {
 
 	
 	public static class ConfigurationError extends Exception {
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
+
 		public ConfigurationError(String option, String value, String message ) {
 			super(String.format("%s %s: %s", option, value, message ));
 		}
@@ -46,6 +51,10 @@ public class Configuration {
 	
 	public static class Parameter extends Option {
 		
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
 		String optionLetter;
 		String optionName;
 		String baseMessage;
@@ -288,36 +297,5 @@ public class Configuration {
 		return Configuration.random;
 	}
 
-	/**
-	 * The main method.
-	 *
-	 * @param args the arguments
-	 */
-	public static void main(String[] args) {
-		Configuration configuration = new Configuration();
-		
-//		for (int i = 128; i <= 256; i += 8) {
-//			int masked = configuration.maskInt(i, 128, 256);
-//			System.out.printf( "%5d %15d %5d\n", i, masked, configuration.unmaskInt(masked, 128, 256 ) );
-//		}
-
-		KeyDerivationParameters kdp = KeyDerivationParameters.getDefaults(configuration);
-		String r1 = kdp.toString();
-//		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-//		try {
-//			kdp.write(bos);
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//		System.out.println( bos.toByteArray().length );
-		byte[] iv = new byte[32];
-		configuration.random.nextBytes(iv);
-		FileHeader fh = new FileHeader( kdp, Jargon2.toByteArray(iv) );
-		System.out.println( Util.toString( fh.getPlainText() ) );
-		KeyDerivationParameters kdp2 = fh.getKeyDerivationParameters();
-		String r2 = kdp2.toString();
-		System.out.println( r1.equals(r2));
-	}
 
 }

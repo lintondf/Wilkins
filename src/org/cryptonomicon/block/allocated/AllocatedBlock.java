@@ -124,30 +124,30 @@ public class AllocatedBlock implements Block {
 		this.contents = contents;
 	}
 
-	public static void main(String[] args) {
-		AllocatedBlockList blocks = new AllocatedBlockList();
-		AllocatedBlock block = new AllocatedBlock();
-		Arrays.fill(block.contents, (byte)100);
-		block.count = Block.BLOCK_SIZE;
-		blocks.add(block);
-		block = new AllocatedBlock();
-		for (int i = 0; i < 10; i++)
-			block.contents[i] = (byte) i;
-		block.count = 10;
-		blocks.add(block);
-		try {
-			AllocatedBlockInputStream bis = new AllocatedBlockInputStream( blocks );
-			System.out.println( bis.available() );
-			while (bis.available() > 0) {
-				int ch = bis.read();
-				System.out.println( ch + " " + bis.available() );
-				if (ch == -1)
-					break;
-			}
-			bis.close();
-		} catch (Exception x) {
-			x.printStackTrace();
-		}
-	}
+//	public static void main(String[] args) {
+//		AllocatedBlockList blocks = new AllocatedBlockList();
+//		AllocatedBlock block = new AllocatedBlock();
+//		Arrays.fill(block.contents, (byte)100);
+//		block.count = Block.BLOCK_SIZE;
+//		blocks.add(block);
+//		block = new AllocatedBlock();
+//		for (int i = 0; i < 10; i++)
+//			block.contents[i] = (byte) i;
+//		block.count = 10;
+//		blocks.add(block);
+//		try {
+//			AllocatedBlockInputStream bis = new AllocatedBlockInputStream( blocks );
+//			System.out.println( bis.available() );
+//			while (bis.available() > 0) {
+//				int ch = bis.read();
+//				System.out.println( ch + " " + bis.available() );
+//				if (ch == -1)
+//					break;
+//			}
+//			bis.close();
+//		} catch (Exception x) {
+//			x.printStackTrace();
+//		}
+//	}
 
 }
