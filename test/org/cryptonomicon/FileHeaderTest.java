@@ -81,7 +81,7 @@ public class FileHeaderTest {
 		Configuration configuration = new Configuration();
 		KeyDerivationParameters parameters = configuration.getKeyDerivationParameters();
 		Random random = new Random();
-		byte[] saltArray = new byte[256/8];
+		byte[] saltArray = new byte[Configuration.AES_IV_BYTES];
 		random.nextBytes(saltArray);
 		ByteArray salt = Jargon2.toByteArray( saltArray );
 		FileHeader fh = new FileHeader( parameters, salt );
@@ -100,7 +100,7 @@ public class FileHeaderTest {
 		Configuration configuration = new Configuration();
 		KeyDerivationParameters parameters = configuration.getKeyDerivationParameters();
 		Random random = new Random();
-		byte[] saltArray = new byte[256/8];
+		byte[] saltArray = new byte[Configuration.AES_IV_BYTES];
 		random.nextBytes(saltArray);
 		ByteArray salt = Jargon2.toByteArray( saltArray );
 		FileHeader fh = new FileHeader( parameters, salt );
@@ -137,7 +137,7 @@ public class FileHeaderTest {
 		Configuration configuration = new Configuration();
 		KeyDerivationParameters parameters = configuration.getKeyDerivationParameters();
 		Random random = new Random();
-		byte[] saltArray = new byte[256/8];
+		byte[] saltArray = new byte[Configuration.AES_IV_BYTES];
 		random.nextBytes(saltArray);
 		ByteArray salt = Jargon2.toByteArray( saltArray );
 		FileHeader fh = new FileHeader( parameters, salt );
@@ -156,7 +156,7 @@ public class FileHeaderTest {
 		Configuration configuration = new Configuration();
 		KeyDerivationParameters parameters = configuration.getKeyDerivationParameters();
 		Random random = new Random();
-		byte[] saltArray = new byte[256/8];
+		byte[] saltArray = new byte[Configuration.AES_IV_BYTES];
 		random.nextBytes(saltArray);
 		ByteArray salt = Jargon2.toByteArray( saltArray );
 		FileHeader fh = new FileHeader( parameters, salt );

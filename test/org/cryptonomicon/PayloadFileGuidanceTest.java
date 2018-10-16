@@ -105,7 +105,7 @@ public class PayloadFileGuidanceTest {
 	@Test
 	public void testToString() {
 		PayloadFileGuidance g = new PayloadFileGuidance( 1, 2, 3, 4L, 5 );
-		assertTrue( g.toString().equals("1 2 3 4 5 true"));
+		assertTrue( g.toString().equals("MB 1; FC 2; FO 3; Seed 4; Length 5; Valid true"));
 	}
 
 }
