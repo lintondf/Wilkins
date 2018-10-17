@@ -41,7 +41,7 @@ public class WilkinsTest {
 	
 	@BeforeClass
 	public static void setUpOnce() {
-		main = new Main(); // initialize logging only
+		main = new Logged(); // initialize logging only
 	}
 
 	/**

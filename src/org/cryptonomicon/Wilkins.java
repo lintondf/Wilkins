@@ -96,7 +96,7 @@ public class Wilkins {
 		try {
 			setCipher(Cipher.getInstance("AES/CBC/NoPadding"));
 		} catch (Exception e) {
-			Main.getLogger().log(Level.SEVERE, "Unable to configure cryptography", e);
+			Logged.log(Level.SEVERE, "Unable to configure cryptography", e);
 			System.exit(0);
 		}
 	}
@@ -126,7 +126,7 @@ public class Wilkins {
 				ByteArray key = keyDerivation.deriveKey(passPhrase, fileHeader.getSalt() );
 	
 				AllocatedBlockedFile pair = new AllocatedBlockedFile(file, key);
-				Main.getLogger().info(String.format("adding %-16s %s %s %d/%d", path, Util.toString(key.getBytes()), passPhrase, pair.getOriginalLength(), pair.getCompressedLength() ));
+				Logged.log(Level.INFO, String.format("adding %-16s %s %s %d/%d", path, Util.toString(key.getBytes()), passPhrase, pair.getOriginalLength(), pair.getCompressedLength() ));
 				maxLength = Math.max(maxLength, pair.getCompressedLength());
 				dataFiles.add(pair);
 				return true;
@@ -150,15 +150,15 @@ public class Wilkins {
 	public boolean read( RandomAccessFile file, OutputStream os, ByteArray passPhrase ) throws IOException, GeneralSecurityException {
 		InflaterOutputStream ios = new InflaterOutputStream( os );
 		
-		Main.getLogger().info( String.format("Read 0: %d", file.getFilePointer()) );
+		Logged.log(Level.INFO,  String.format("Read 0: %d", file.getFilePointer()) );
 		FileHeader fileHeader = new FileHeader(configuration, file);
 		if (! fileHeader.isValid()) {
-			Main.getLogger().log( Level.SEVERE, "Invalid Haystack file header");
+			Logged.log( Level.SEVERE, "Invalid Haystack file header");
 			return false;
 		}
 
-		Main.getLogger().info( String.format("Read 1: %d", file.getFilePointer()) );
-		Main.getLogger().info( String.format(fileHeader.toString() ) );
+		Logged.log(Level.INFO,  String.format("Read 1: %d", file.getFilePointer()) );
+		Logged.log(Level.INFO,  String.format(fileHeader.toString() ) );
 		ArgonParameters argonParameters = configuration.getKeyDerivationParameters().getArgonParameters();
 		parameters.setArgonParameters(argonParameters);
 		
@@ -169,7 +169,7 @@ public class Wilkins {
 		PayloadFileGuidance targetGuidance = null;
 		while (file.getFilePointer() < file.length()) {
 			PayloadFileGuidance fileGuidance = new PayloadFileGuidance(file);
-			Main.getLogger().info( String.format("Read 2: %d", file.getFilePointer()) );
+			Logged.log(Level.INFO,  String.format("Read 2: %d", file.getFilePointer()) );
 			fileIndex++;
 			if (fileGuidance.decode(getCipher(), secretKey, fileHeader.getIV())) {
 				if (fileGuidance.isValid()) {
@@ -179,16 +179,16 @@ public class Wilkins {
 			}
 		}
 		if (targetGuidance == null || file.getFilePointer() >= file.length()) {
-			Main.getLogger().log( Level.SEVERE, "No payload file matches specified passphrase");
+			Logged.log( Level.SEVERE, "No payload file matches specified passphrase");
 			return false;
 		}
-		Main.getLogger().info( String.format("Read 3: %d", file.getFilePointer()) );
-		Main.getLogger().info( String.format("FOUND: " + fileIndex + ": " + targetGuidance.toString()) );
+		Logged.log(Level.INFO,  String.format("Read 3: %d", file.getFilePointer()) );
+		Logged.log(Level.INFO,  String.format("FOUND: " + fileIndex + ": " + targetGuidance.toString()) );
 		while (fileIndex < targetGuidance.getFileCount()) {
 			new PayloadFileGuidance(file);
 			fileIndex++;
 		}
-		Main.getLogger().info( String.format("Read 4: %d", file.getFilePointer()) );
+		Logged.log(Level.INFO,  String.format("Read 4: %d", file.getFilePointer()) );
 		
 		baseRandom.setSeed( targetGuidance.getSeed() );
 		try {
@@ -198,7 +198,7 @@ public class Wilkins {
 			return mixer.readBlocks( targetGuidance, baseRandom, file, cos );
 		} catch (Exception x) {
 			x.printStackTrace();
-			Main.getLogger().log( Level.SEVERE, "Exception reading blocks: ", x);
+			Logged.log( Level.SEVERE, "Exception reading blocks: ", x);
 			return false;
 		}
 	}
@@ -262,10 +262,10 @@ public class Wilkins {
 	public boolean write( RandomAccessFile writer, FileHeader fileHeader ) throws IOException {
 		//System.out.printf("HEADER: (%d) %s\n", fileHeader.header.length, BaseEncoding.base16().lowerCase().encode(fileHeader.header));
 		//System.out.println( fileHeader.toString() );
-		Main.getLogger().info( String.format("Write 0: %d", writer.getFilePointer()) );
-		Main.getLogger().info( String.format(fileHeader.toString() ) );
+		Logged.log(Level.INFO,  String.format("Write 0: %d", writer.getFilePointer()) );
+		Logged.log(Level.INFO,  String.format(fileHeader.toString() ) );
 		writer.write( fileHeader.getPlainText() );
-		Main.getLogger().info( String.format("Write 1: %d", writer.getFilePointer()) );
+		Logged.log(Level.INFO,  String.format("Write 1: %d", writer.getFilePointer()) );
 		
 		// randomly permute the order of the files
 		int[] moduli = new int[allFiles.size()];
@@ -273,7 +273,7 @@ public class Wilkins {
 			moduli[i] = i;
 		}
 		moduli = Util.permute( Configuration.getSecureRandom(), moduli );
-		Main.getLogger().info( String.format("File Order: %s", Arrays.toString(moduli)) );
+		Logged.log(Level.INFO,  String.format("File Order: %s", Arrays.toString(moduli)) );
 		
 		// generate a common simpleRandom seed for block order permutations
 		long seed = Configuration.getSecureRandom().nextLong() & 0xFFFFFFFFFFFFL;
@@ -284,7 +284,7 @@ public class Wilkins {
 		for (int modulus : moduli) {
 			BlockedFile file = allFiles.get(modulus);
 			PayloadFileGuidance fileGuidance = new PayloadFileGuidance(maxBlocks, moduli.length, modulus, seed, (int) file.getOriginalLength() );
-			Main.getLogger().info( fileGuidance.toString() );
+			Logged.log(Level.INFO,  fileGuidance.toString() );
 //			System.out.printf("FILE %d: (%d) %s\n", modulus, fileGuidance.getPlainText().length, 
 //					BaseEncoding.base16().lowerCase().encode(fileGuidance.getPlainText()));
 			//System.out.println( fileGuidance.toString() );
@@ -293,7 +293,7 @@ public class Wilkins {
 			writer.write( fileGuidance.getCipherText() );
 			//System.out.printf("      : %s\n", toString(fileGuidance.getCipherText()));
 		}
-		Main.getLogger().info( String.format("Write 2: %d", writer.getFilePointer()) );
+		Logged.log(Level.INFO,  String.format("Write 2: %d", writer.getFilePointer()) );
 		
 		baseRandom.setSeed(seed);
 		return mixer.writeBlocks( baseRandom, maxBlocks, allFiles, writer );

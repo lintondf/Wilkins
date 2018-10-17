@@ -8,12 +8,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.SecureRandom;
+import java.util.logging.FileHandler;
+import java.util.logging.Handler;
+import java.util.logging.Level;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.cryptonomicon.FileHeader;
+import org.cryptonomicon.Logged.ReportLogFormatter;
 import org.cryptonomicon.Util;
 import org.cryptonomicon.Wilkins;
 
@@ -155,6 +159,7 @@ public class Configuration {
 				return this.getDefaultValue();
 			}
 		}
+
 	}
 	
 	public Configuration() {

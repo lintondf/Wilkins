@@ -58,12 +58,12 @@ public class Execute {
 					long now = (new Date()).getTime();
 					if ((now - startTime) > 60 * 1000) {
 						startTime = now;
-						Main.getLogger().finer(line);
+						Logged.log(Level.FINER, line);
 						System.out.println(line);
 					}
 				}
 			} catch (IOException ioe) {
-				Main.getLogger().log(Level.SEVERE, "EXCEPTION: ", ioe);
+				Logged.log(Level.SEVERE, "EXCEPTION: ", ioe);
 			}
 		}
 	} // class StreamCapture

@@ -18,7 +18,7 @@ import java.util.zip.InflaterOutputStream;
 
 import javax.crypto.CipherOutputStream;
 
-import org.cryptonomicon.Main;
+import org.cryptonomicon.Logged;
 import org.cryptonomicon.PayloadFileGuidance;
 import org.cryptonomicon.block.Block;
 import org.cryptonomicon.block.BlockList;
@@ -68,17 +68,17 @@ public class ShuffledInterlaceMixer implements Mixer {
 		if ( ((int) length % Block.BLOCK_SIZE) > 0)
 			nBlocks++;
 		int remaining = (int) length;
-		Main.getLogger().log(Level.FINE, String.format("Read Blocks %d from %d of %d", nBlocks, fileModulus, length ));
+		Logged.log(Level.FINE, String.format("Read Blocks %d from %d of %d", nBlocks, fileModulus, length ));
 		for (int iBlock = 0; iBlock < nBlocks; iBlock++) {
 			permute( random, shuffled );
 			for (BlockReader reader : shuffled) {
 				reader.readFull();
-				Main.getLogger().log(Level.FINEST, String.format( "R%d,%d %s", iBlock, readers.indexOf(reader), reader.getLast().toString() ) );
+				Logged.log(Level.FINEST, String.format( "R%d,%d %s", iBlock, readers.indexOf(reader), reader.getLast().toString() ) );
 			}
 			Block allXor = readers.get(nFiles).getLast();
 			AllocatedBlock allButTarget = readers.get(fileModulus).getLast();
 			allXor = allXor.xor( allButTarget );
-			Main.getLogger().log(Level.FINER, String.format("%3d %3d  %8d", iBlock, nBlocks, remaining ));
+			Logged.log(Level.FINER, String.format("%3d %3d  %8d", iBlock, nBlocks, remaining ));
 			allXor.write( cos, (remaining > Block.BLOCK_SIZE) ? Block.BLOCK_SIZE : remaining);
 			remaining -= Block.BLOCK_SIZE;
 		}
@@ -95,7 +95,7 @@ public class ShuffledInterlaceMixer implements Mixer {
 			throws IOException {
 		// generate xor'd data blocks: {for-each-i {xor(all but i)}, xor all}
 		for (BlockedFile file : allFiles) {
-			Main.getLogger().log(Level.FINEST, String.format("of %d/%d", file.getOriginalLength(), file.getCompressedLength() ) );
+			Logged.log(Level.FINEST, String.format("of %d/%d", file.getOriginalLength(), file.getCompressedLength() ) );
 		}
 		ArrayList<BlockList> allLists = new ArrayList<>();
 		for (BlockedFile file : allFiles) {
@@ -114,7 +114,7 @@ public class ShuffledInterlaceMixer implements Mixer {
 		}
 		iterators.add( xorOfAll.getIterator() ); // in file order
 		shuffled.addAll( iterators );
-		Main.getLogger().log(Level.FINEST, String.format("WriteBlocks %d %d @ %d", maxBlocks, iterators.size(), writer.getFilePointer() ) );
+		Logged.log(Level.FINEST, String.format("WriteBlocks %d %d @ %d", maxBlocks, iterators.size(), writer.getFilePointer() ) );
 		
 		for (int iBlock = 0; iBlock < maxBlocks; iBlock++) {
 			permute( random, shuffled );
@@ -124,7 +124,7 @@ public class ShuffledInterlaceMixer implements Mixer {
 				//Main.getLogger().log(Level.FINEST, String.format("%d,%d @ %d", iBlock, iterators.indexOf(it), writer.getFilePointer() ) );
 			}
 		}
-		Main.getLogger().log(Level.FINEST, String.format("WriteBlocks Final: %d", writer.getFilePointer()));
+		Logged.log(Level.FINEST, String.format("WriteBlocks Final: %d", writer.getFilePointer()));
 		writer.close();
 		return true;
 	}
